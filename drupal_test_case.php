@@ -1246,7 +1246,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
   /**
    * Initializes the cURL connection.
    *
-   * If the simpletest_httpauth_credentials variable is set, this function will
+   * If the UPAL_HTTP_USER and UPAL_HTTP_PASS config vars are set, this function will
    * add HTTP authentication headers. This is necessary for testing sites that
    * are protected by login credentials from public access.
    * See the description of $curl_options for other options.
@@ -2438,6 +2438,12 @@ function upal_init() {
 
   // The URL that browser based tests (ewwwww) should use.
   define('UPAL_WEB_URL', getenv('UPAL_WEB_URL') ? getenv('UPAL_WEB_URL') : (isset($GLOBALS['UPAL_WEB_URL']) ? $GLOBALS['UPAL_WEB_URL'] : 'http://upal'));
+
+
+  // http auth credentials in phpunit.xml
+  if (getenv('UPAL_HTTP_USER') && getenv('UPAL_HTTP_USER')) {
+    $this->httpauth_credentials = getenv('UPAL_HTTP_USER') . ':' . getenv('UPAL_HTTP_USER');
+  }
 
 
   // Set the env vars that Derupal expects. Largely copied from drush.
