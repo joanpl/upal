@@ -1739,15 +1739,15 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    */
   protected function clickLink($label, $index = 0) {
     $url_before = $this->getUrl();
-    $urls = $this->xpath('//a[normalize-space(text())=:label]', array(':label' => $label));
+    $urls = $this->xpath('//a[text()="' . $label . '"]');
 
     if (isset($urls[$index])) {
       $url_target = $this->getAbsoluteUrl($urls[$index]['href']);
     }
 
-    $this->assertTrue(isset($urls[$index]), t('Clicked link %label (@url_target) from @url_before', array('%label' => $label, '@url_target' => $url_target, '@url_before' => $url_before)), t('Browser'));
+    $this->assertTrue(isset($urls[$index]), t('Clicked link "!label" (!url_target) from !url_before', array('!label' => $label, '!url_target' => $url_target, '!url_before' => $url_before)), t('Browser'));
 
-    if (isset($url_target)) {
+    if (isset($urls[$index])) {
       return $this->drupalGet($url_target);
     }
     return FALSE;
