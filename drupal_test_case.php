@@ -2329,6 +2329,12 @@ class DrupalUnitTestCase extends DrupalTestCase {
   }
 }
 
+
+
+/*
+[bb@newleafdigital]
+  - no longer starts with empty environment. instead runs on its own ready-to-test site, handle test data separately.
+*/
 class DrupalWebTestCase extends DrupalTestCase {
   public function setUp() {
     parent::setUp();
@@ -2336,8 +2342,12 @@ class DrupalWebTestCase extends DrupalTestCase {
     if (!defined('DRUPAL_ROOT')) {
       define('DRUPAL_ROOT', UPAL_ROOT);
     }
+    // [bb] @todo - this is too rigid
     $site = DRUPAL_ROOT . '/sites/upal';
 
+
+    // [bb] no longer
+    /*
     // Restore virgin files directory.
     $files_dir = "$site/files";
     if (file_exists($files_dir)) {
@@ -2346,7 +2356,9 @@ class DrupalWebTestCase extends DrupalTestCase {
     mkdir("$site/files", 0777, TRUE);
     // For some reason I need a chmod() as well.
     chmod("$site/files", 0777);
-
+    */
+    
+    
     $db = parse_url(UPAL_DB_URL);
 
     // Restore virgin DB.
@@ -2354,27 +2366,30 @@ class DrupalWebTestCase extends DrupalTestCase {
       -- need more flexible dump to start with.
       -- pull in UNISH class for calling `drush`
     */
-    $cmd = sprintf('%s --db-url=%s --uri=upal eval "drush_sql_empty_db();"', UNISH_DRUSH, UPAL_DB_URL);
-    if (exec($cmd, $output, $return)) {
-      exit('Failed to empty DB.');
-    }
+    // [bb] no longer
+    // $cmd = sprintf('%s --db-url=%s --uri=upal eval "drush_sql_empty_db();"', UNISH_DRUSH, UPAL_DB_URL);
+    // if (exec($cmd, $output, $return)) {
+    //   exit('Failed to empty DB.');
+    // }
 
     // Restore virgin DB. Will do in Drush once we get http://drupal.org/node/1226260.
     // TODO: replace with drush sql_query.
-    if (isset($db['user'])) {
-      $parts[] = '-u' . $db['user'];
-    }
-    if (isset($db['pass'])) {
-      $parts[] = '-p' . $db['pass'];
-    }
-    $parts[] = '-h' . $db['host'];
-    if (isset($db['port'])) {
-      $parts[] = '-P' . $db['port'];
-    }
-    $parts[] = '-D' . trim($db['path'], '/');
-    $cmd = 'mysql '. implode(' ', $parts) . ' < ' . dirname(__FILE__) . '/drupal-7.4-standard.sql';
-    exec($cmd, $output, $return);
+    // if (isset($db['user'])) {
+    //   $parts[] = '-u' . $db['user'];
+    // }
+    // if (isset($db['pass'])) {
+    //   $parts[] = '-p' . $db['pass'];
+    // }
+    // $parts[] = '-h' . $db['host'];
+    // if (isset($db['port'])) {
+    //   $parts[] = '-P' . $db['port'];
+    // }
+    // $parts[] = '-D' . trim($db['path'], '/');
+    // $cmd = 'mysql '. implode(' ', $parts) . ' < ' . dirname(__FILE__) . '/drupal-7.4-standard.sql';
+    // exec($cmd, $output, $return);
 
+    // [bb] no longer - assuming settings.php already set up
+    /*
     $byline = '// Written by the Upal Test Framework. See DrupalWebTestCase::setUp().';
     // Write settings.php if needed. @todo perhaps Drush can do this better.
     if (!file_exists("$site/settings.php")) {
@@ -2391,10 +2406,14 @@ class DrupalWebTestCase extends DrupalTestCase {
       $data = "<?php\n\n$byline\n$databases\n\n$conf\n\n?>";
       file_put_contents("$site/settings.php", $data);
     }
+    */
 
     require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
     drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
 
+
+    // [bb] no longer - modules already enabled in site
+    /*
     // Enable modules for this test.
     $modules = func_get_args();
     if (isset($modules[0]) && is_array($modules[0])) {
@@ -2403,6 +2422,7 @@ class DrupalWebTestCase extends DrupalTestCase {
     if ($modules) {
       module_enable($modules, TRUE);
     }
+    */
 
     // Use the test mail class instead of the default mail handler class.
     variable_set('mail_system', array('default-system' => 'TestingMailSystem'));
