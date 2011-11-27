@@ -1266,10 +1266,16 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
         CURLOPT_HEADERFUNCTION => array(&$this, 'curlHeaderCallback'),
         CURLOPT_USERAGENT => 'Upal',
       );
-      if (isset($this->httpauth_credentials)) {
+
+      // http credentials optionally in phpunit.xml
+      if (isset($GLOBALS['UPAL_HTTP_USER']) && isset($GLOBALS['UPAL_HTTP_PASS']) && !empty($GLOBALS['UPAL_HTTP_USER']) && !empty($GLOBALS['UPAL_HTTP_PASS'])) {
+        $this->httpauth_credentials = $GLOBALS['UPAL_HTTP_USER'] . ':' . $GLOBALS['UPAL_HTTP_PASS'];
+
         $curl_options[CURLOPT_HTTPAUTH] = $this->httpauth_method;
         $curl_options[CURLOPT_USERPWD] = $this->httpauth_credentials;
       }
+
+
       curl_setopt_array($this->curlHandle, $this->additionalCurlOptions + $curl_options);
 
       // By default, the child session name should be the same as the parent.
@@ -2440,13 +2446,11 @@ function upal_init() {
   define('UPAL_WEB_URL', getenv('UPAL_WEB_URL') ? getenv('UPAL_WEB_URL') : (isset($GLOBALS['UPAL_WEB_URL']) ? $GLOBALS['UPAL_WEB_URL'] : 'http://upal'));
 
 
-  // http auth credentials in phpunit.xml
-  if (getenv('UPAL_HTTP_USER') && getenv('UPAL_HTTP_USER')) {
-    $this->httpauth_credentials = getenv('UPAL_HTTP_USER') . ':' . getenv('UPAL_HTTP_USER');
-  }
+  // http credentials (optional)
+  $GLOBALS['UPAL_HTTP_USER'] = getenv('UPAL_HTTP_USER') ? getenv('UPAL_HTTP_USER') : (isset($GLOBALS['UPAL_HTTP_USER']) ? $GLOBALS['UPAL_HTTP_USER'] : NULL);
+  $GLOBALS['UPAL_HTTP_PASS'] = getenv('UPAL_HTTP_PASS') ? getenv('UPAL_HTTP_PASS') : (isset($GLOBALS['UPAL_HTTP_PASS']) ? $GLOBALS['UPAL_HTTP_PASS'] : NULL);
 
-
-  // Set the env vars that Derupal expects. Largely copied from drush.
+  // Set the env vars that Drupal expects. Largely copied from drush.
   $url = parse_url(UPAL_WEB_URL);
 
   if (array_key_exists('path', $url)) {
