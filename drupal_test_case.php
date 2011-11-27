@@ -1583,8 +1583,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     // the login was successful.
     $pass = $this->assertLink(t('Log out'), 0, t('User %name successfully logged in.', array('%name' => $user->name)), t('User login'));
 
-    if (1 || $pass) {
-      // TODO: declare this var
+    if ($pass) {
       $this->loggedInUser = $user;
     }
   }
@@ -1596,8 +1595,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     // Make a request to the logout page, and redirect to the user page, the
     // idea being if you were properly logged out you should be seeing a login
     // screen.
-    $this->drupalGet('user/logout');
-    $this->drupalGet('user');
+    $this->drupalGet('logout', array('query' => 'destination=user'));
     $pass = $this->assertField('name', t('Username field found.'), t('Logout'));
     $pass = $pass && $this->assertField('pass', t('Password field found.'), t('Logout'));
 
@@ -1618,10 +1616,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
   protected function drupalCreateNode($settings = array()) {
     // Populate defaults array.
     $settings += array(
-      'body'      => array(LANGUAGE_NONE => array(array())),
+      'body'      => $this->randomName(32),
       'title'     => $this->randomName(8),
       'comment'   => 2,
-      'changed'   => REQUEST_TIME,
+      'changed'   => time(),
+      'format'    => FILTER_FORMAT_DEFAULT,
       'moderate'  => 0,
       'promote'   => 0,
       'revision'  => 1,
@@ -1630,7 +1629,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
       'sticky'    => 0,
       'type'      => 'page',
       'revisions' => NULL,
-      'language'  => LANGUAGE_NONE,
+      'taxonomy'  => NULL,
     );
 
     // Use the original node's created time for existing nodes.
@@ -1650,21 +1649,22 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
       }
     }
 
-    // Merge body field value and format separately.
-    $body = array(
-      'value' => $this->randomName(32),
-      'format' => filter_default_format(),
-    );
-    $settings['body'][$settings['language']][0] += $body;
+//    // Merge body field value and format separately.
+//    $body = array(
+//      'value' => $this->randomName(32),
+//      'format' => FILTER_FORMAT_DEFAULT
+//    );
+//    $settings['body'][FIELD_LANGUAGE_NONE][0] += $body;
 
     $node = (object) $settings;
     node_save($node);
 
     // Small hack to link revisions to our test user.
-    db_update('node_revision')
-      ->fields(array('uid' => $node->uid))
-      ->condition('vid', $node->vid)
-      ->execute();
+//    db_update('node_revision')
+//      ->fields(array('uid' => $node->uid))
+//      ->condition('vid', $node->vid)
+//      ->execute();
+    db_query('UPDATE {node_revisions} SET uid = %d WHERE vid = %d', $node->uid, $node->vid);
     return $node;
   }
 
