@@ -9,9 +9,6 @@
  *     - hard coded TRUE at end of drupalLogin() because PHPUnit doesn't return
  *       anything from an assertion (unlike simpletest). Even if we fix drupalLogin(),
  *       we have to fix this to get 100% compatibility with simpletest.
- *     - setUp() only resets DB for mysql. Probably should use Drush and thus
- *       support postgres and sqlite easily. That buys us auto creation of upal DB
- *       as well.
  *     - Unlikely: Instead of DB restore, clone as per http://drupal.org/node/666956.
  *     - error() could log $caller info.
  *     - Fix verbose().
@@ -150,6 +147,13 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    * The number of redirects followed during the handling of a request.
    */
   protected $redirect_count;
+
+
+  /**
+   * for verbose output
+   */
+  protected $printer;
+
 
   public function run(PHPUnit_Framework_TestResult $result = NULL) {
     $this->setPreserveGlobalState(FALSE);
@@ -1096,11 +1100,34 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     return $all_permutations;
   }
 
-  function verbose($message) {
-    if (strlen($message) < 500) {
-      // $this->log($message, 'verbose');
+
+  public function verbose($message, $cutoff = 500) {
+
+    // init printer on first time
+    if (! $this->printer instanceof PHPUnit_TextUI_ResultPrinter) {
+      $this->printer = new PHPUnit_TextUI_ResultPrinter('php://stdout', TRUE, TRUE, TRUE);   // can change to stderr
+      //echo "SET UP PRINTER!!!\n";  // (this works too, but not as good...?)
     }
+
+    // default limit to arbitrary length
+    if (is_int($cutoff) && strlen($message) > $cutoff) {
+      $message = truncate_utf8($message, $cutoff, FALSE, TRUE);
+    }
+
+    //$this->log($message, 'verbose');      // this doesn't do anything
+    //echo "[verbose] " . $message . "\n";  // this works but is crude
+
+    $this->printer->write($message . "\n\n");  // seems to be a more native approach
   }
+
+  /**
+   * output objects
+   */
+  public function debug($obj, $heading = '') {
+   $this->verbose( (empty($heading) ? '' : "* {$heading}:\n") . print_r($obj,TRUE), NULL );
+  }
+
+
 
   /**
    * Create a user with a given set of permissions. The permissions correspond to the
@@ -2270,6 +2297,8 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
 
 class DrupalUnitTestCase extends DrupalTestCase {
   function setUp() {
+    $this->verbose("Setting up " . get_class($this));
+
     parent::setUp();
 
     if (!defined('DRUPAL_ROOT')) {
@@ -2288,6 +2317,8 @@ class DrupalUnitTestCase extends DrupalTestCase {
 */
 class DrupalWebTestCase extends DrupalTestCase {
   public function setUp() {
+    $this->verbose("Setting up " . get_class($this));
+
     parent::setUp();
 
     if (!defined('DRUPAL_ROOT')) {
