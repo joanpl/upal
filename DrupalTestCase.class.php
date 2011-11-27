@@ -199,6 +199,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
   public static function assertTrue($condition, $message = '') {
     self::verbose(sprintf("%s %s", __FUNCTION__, $message));
     parent::assertTrue($condition, $message = '');
+    return TRUE;  // needed for simpletest back-comp (e.g. in drupalLogin), but dumb / always true.
   }
   
   public static function assertFalse($condition, $message = '') {
@@ -1639,12 +1640,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     );
     $this->drupalPost('user', $edit, t('Log in'));
     
-    $this->verbose("HTML:\n" . $this->drupalGetContent());
-
     // If a "log out" link appears on the page, it is almost certainly because
     // the login was successful.
     $pass = $this->assertLink(t('Log out'), 0, t('User %name successfully logged in.', array('%name' => $user->name)), t('User login'));
-
+    
+    // [bb] $pass here is forced to TRUE, but really phpunit doesn't return TRUE on success, so this runs either way:
     if ($pass) {
       $this->loggedInUser = $user;
     }
@@ -2321,7 +2321,52 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     $this->drupalSettings = $settings;
   }
 
- }
+
+  /**
+   * crude mechanism to dump current CURL'd html to file system
+   * dir set in phpunit.xml as DUMP_DIR. create subdir for this test run and file for each dump.
+   */
+  public function dumpContentToFile() {
+    $dump_dir = isset($GLOBALS['DUMP_DIR']) ? $GLOBALS['DUMP_DIR'] : NULL;
+    if (empty($dump_dir) || !file_exists($dump_dir)) {
+      $this->error("Missing or invalid DUMP_DIR in " . __FUNCTION__);
+      return;
+    }
+
+    static $run_ts = NULL;
+      if (! $run_ts) $run_ts = date('Y-m-d_H:m:s');
+
+    $dump_dir .= '/' . $run_ts;
+    if (! file_exists($dump_dir)) {
+      $made = mkdir($dump_dir);
+      if (! $made) {
+        $this->error("Unable to create dump subdir $dump_dir");
+        return;
+      }
+    }
+
+    $filename = $this->getUrl();
+    $filename = str_replace('/', '-', $filename);
+    $filename = str_replace(':', '', $filename);
+    $filename = str_replace('.', '_', $filename);
+
+    // add counter to identify order and prevent dups/overrides of same URL
+    static $count = 0;
+    $filename = (++$count) . '-' . $filename . '.html';
+
+    $filepath = realpath($dump_dir) . '/' . $filename;
+    
+    //$this->verbose(sprintf("Dumping content to %s", $filepath));
+
+    $put = file_put_contents($filepath, $this->drupalGetContent());
+    if ($put === FALSE) $this->error("Unable to dump content to $filepath.");
+    else $this->verbose("Dumped content to $filepath.");
+  }
+
+
+
+} // abstract class DrupalTestCase
+
 
 class DrupalUnitTestCase extends DrupalTestCase {
   function setUp() {
