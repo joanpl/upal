@@ -11,7 +11,6 @@
  *       we have to fix this to get 100% compatibility with simpletest.
  *     - Unlikely: Instead of DB restore, clone as per http://drupal.org/node/666956.
  *     - error() could log $caller info.
- *     - Fix verbose().
  *     - Fix random test failures.
  *     - Split into separate class files and add autoloader for upal.
  *     - Compare speed versus simpletest.
@@ -152,7 +151,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
   /**
    * for verbose output
    */
-  protected $printer;
+  protected static $printer;
 
 
   public function run(PHPUnit_Framework_TestResult $result = NULL) {
@@ -210,7 +209,44 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     return $this->fail('exception: ' . $message, $group);
   }
 
-  function assertEqual($expected, $actual, $msg = NULL) {
+
+  ///////////////
+  // [bb] overrides added simply to add verbose output
+  
+  public static function assertTrue($condition, $message = '') {
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    parent::assertTrue($condition, $message = '');
+  }
+  
+  public static function assertFalse($condition, $message = '') {
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    parent::assertFalse($condition, $message = '');
+  }
+  
+  public static function assertNotNull($actual, $message = '') {
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    parent::assertNotNull($actual, $message);
+  }
+  
+  public static function assertNull($actual, $message = '') {
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    parent::assertNull($actual, $message);
+  }
+
+  public static function assertEquals($expected, $actual, $message = '', $delta = 0, $maxDepth = 10, $canonicalize = FALSE, $ignoreCase = FALSE) {
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    parent::assertEquals($expected, $actual, $message, $delta, $maxDepth, $canonicalize, $ignoreCase);
+  }
+
+  public static function assertContains($needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE) {
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    parent::assertContains($needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE);
+  }
+
+  ///////////////
+
+
+  function assertEqual($expected, $actual, $message = '') {
     return $this->assertEquals($expected, $actual);
   }
 
@@ -1101,11 +1137,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
   }
 
 
-  public function verbose($message, $cutoff = 500) {
+  public static function verbose($message, $cutoff = 500) {
 
     // init printer on first time
-    if (! $this->printer instanceof PHPUnit_TextUI_ResultPrinter) {
-      $this->printer = new PHPUnit_TextUI_ResultPrinter('php://stdout', TRUE, TRUE, TRUE);   // can change to stderr
+    if (! self::$printer instanceof PHPUnit_TextUI_ResultPrinter) {
+      self::$printer = new PHPUnit_TextUI_ResultPrinter('php://stdout', TRUE, TRUE, TRUE);   // can change to stderr
       //echo "SET UP PRINTER!!!\n";  // (this works too, but not as good...?)
     }
 
@@ -1117,14 +1153,14 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     //$this->log($message, 'verbose');      // this doesn't do anything
     //echo "[verbose] " . $message . "\n";  // this works but is crude
 
-    $this->printer->write($message . "\n\n");  // seems to be a more native approach
+    self::$printer->write($message . "\n\n");  // seems to be a more native approach
   }
 
   /**
    * output objects
    */
   public function debug($obj, $heading = '') {
-   $this->verbose( (empty($heading) ? '' : "* {$heading}:\n") . print_r($obj,TRUE), NULL );
+   self::verbose( (empty($heading) ? '' : "* {$heading}:\n") . print_r($obj,TRUE), NULL );
   }
 
 
