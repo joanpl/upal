@@ -1677,6 +1677,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    * @return
    *   Created content type.
    */
+  /*
   protected function drupalCreateContentType($settings = array()) {
     // Find a non-existent random type name.
     do {
@@ -1719,6 +1720,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
 
     return $type;
   }
+  */
 
   /**
    * Follows a link by name.
