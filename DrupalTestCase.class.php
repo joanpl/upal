@@ -2324,7 +2324,8 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
 
   /**
    * crude mechanism to dump current CURL'd html to file system
-   * dir set in phpunit.xml as DUMP_DIR. create subdir for this test run and file for each dump.
+   * dir set in phpunit.xml as DUMP_DIR. 
+   * [tried and removed: create subdir for this test run and file for each dump]
    */
   public function dumpContentToFile() {
     $dump_dir = isset($GLOBALS['DUMP_DIR']) ? $GLOBALS['DUMP_DIR'] : NULL;
@@ -2333,17 +2334,19 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
       return;
     }
 
-    static $run_ts = NULL;
-      if (! $run_ts) $run_ts = date('Y-m-d_H:m:s');
 
-    $dump_dir .= '/' . $run_ts;
-    if (! file_exists($dump_dir)) {
-      $made = mkdir($dump_dir);
-      if (! $made) {
-        $this->error("Unable to create dump subdir $dump_dir");
-        return;
-      }
-    }
+    // tried per-run subdir, but dropped; should be handled separately in jenkins/bash
+    //static $run_ts = NULL;
+    //  if (! $run_ts) $run_ts = date('Y-m-d_H:m:s');
+
+    //$dump_dir .= '/' . $run_ts;
+    //if (! file_exists($dump_dir)) {
+    //  $made = mkdir($dump_dir);
+    //  if (! $made) {
+    //    $this->error("Unable to create dump subdir $dump_dir");
+    //    return;
+    //  }
+    //}
 
     $filename = $this->getUrl();
     $filename = str_replace('/', '-', $filename);
