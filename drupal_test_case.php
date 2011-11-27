@@ -1407,7 +1407,8 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    */
   protected function drupalGetToken($value = '') {
     $private_key = drupal_get_private_key();
-    return drupal_hmac_base64($value, $this->session_id . $private_key);
+    // return drupal_hmac_base64($value, $this->session_id . $private_key);
+    return md5($this->session_id . $value . $private_key);
   }
 
   /**
@@ -1575,10 +1576,12 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   TRUE or FALSE depending on whether the permissions are valid.
    */
   protected function checkPermissions(array $permissions, $reset = FALSE) {
-    $available = &drupal_static(__FUNCTION__);
+    //$available = &drupal_static(__FUNCTION__);
+    static $available;
 
     if (!isset($available) || $reset) {
-      $available = array_keys(module_invoke_all('permission'));
+      //$available = array_keys(module_invoke_all('permission'));
+      $available = module_invoke_all('perm');
     }
 
     $valid = TRUE;
@@ -2250,10 +2253,15 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    * This method is called by DrupalWebTestCase::setUp() after enabling
    * the requested modules. It must be called again when additional modules
    * are enabled later.
+   *
+   * [bb] backport to D6, not loading modules in tests - can't do this / don't need this anymore
    */
   protected function resetAll() {
+    return;
+    /*
     // Reset all static variables.
     drupal_static_reset();
+    
     // Reset the list of enabled modules.
     module_list(TRUE);
 
@@ -2263,11 +2271,12 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     drupal_get_schema(NULL, TRUE);
 
     // Perform rebuilds and flush remaining caches.
-    drupal_flush_all_caches();
+    //drupal_flush_all_caches();
 
     // Reload global $conf array and permissions.
     $this->refreshVariables();
     $this->checkPermissions(array(), TRUE);
+    */
   }
 
   /**
@@ -2283,9 +2292,13 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    * to ensure that the most up-to-date set of variables is loaded.
    */
   protected function refreshVariables() {
+    // [bb] not doing this anymore
+    
+    /*
     global $conf;
     cache_clear_all('variables', 'cache_bootstrap');
     $conf = variable_initialize();
+    */
   }
 
   /**
