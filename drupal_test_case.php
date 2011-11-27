@@ -1757,28 +1757,26 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    * Takes a path and returns an absolute path.
    *
    * @param $path
-   *   A path from the internal browser content.
+   *   The path, can be a Drupal path or a site-relative path. It might have a
+   *   query, too. Can even be an absolute path which is just passed through.
    * @return
-   *   The $path with $base_url prepended, if necessary.
+   *   An absolute path.
    */
   protected function getAbsoluteUrl($path) {
-    global $base_url, $base_path;
-
+    $options = array('absolute' => TRUE);
     $parts = parse_url($path);
+    // This is more crude than the menu_is_external but enough here.
     if (empty($parts['host'])) {
-      // Ensure that we have a string (and no xpath object).
-      $path = (string) $path;
-      // Strip $base_path, if existent.
-      $length = strlen($base_path);
-      if (substr($path, 0, $length) === $base_path) {
-        $path = substr($path, $length);
+      $path = $parts['path'];
+      $base_path = base_path();
+      $n = strlen($base_path);
+      if (substr($path, 0, $n) == $base_path) {
+        $path = substr($path, $n);
       }
-      // Ensure that we have an absolute path.
-      if ($path[0] !== '/') {
-        $path = '/' . $path;
+      if (isset($parts['query'])) {
+        $options['query'] = $parts['query'];
       }
-      // Finally, prepend the $base_url.
-      $path = $base_url . $path;
+      $path = url($path, $options);
     }
     return $path;
   }
@@ -1977,21 +1975,20 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    */
   protected function handleForm(&$post, &$edit, &$upload, $submit, $form) {
     // Retrieve the form elements.
-    $elements = $form->xpath('.//input[not(@disabled)]|.//textarea[not(@disabled)]|.//select[not(@disabled)]');
+    $elements = $form->xpath('.//input|.//textarea|.//select');
     $submit_matches = FALSE;
     foreach ($elements as $element) {
       // SimpleXML objects need string casting all the time.
       $name = (string) $element['name'];
       // This can either be the type of <input> or the name of the tag itself
       // for <select> or <textarea>.
-      $type = isset($element['type']) ? (string) $element['type'] : $element->getName();
-      $value = isset($element['value']) ? (string) $element['value'] : '';
+      $type = isset($element['type']) ? (string)$element['type'] : $element->getName();
+      $value = isset($element['value']) ? (string)$element['value'] : '';
       $done = FALSE;
       if (isset($edit[$name])) {
         switch ($type) {
           case 'text':
           case 'textarea':
-          case 'hidden':
           case 'password':
             $post[$name] = $edit[$name];
             unset($edit[$name]);
@@ -2017,37 +2014,22 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
             break;
           case 'select':
             $new_value = $edit[$name];
+            $index = 0;
+            $key = preg_replace('/\[\]$/', '', $name);
             $options = $this->getAllOptions($element);
-            if (is_array($new_value)) {
-              // Multiple select box.
-              if (!empty($new_value)) {
-                $index = 0;
-                $key = preg_replace('/\[\]$/', '', $name);
-                foreach ($options as $option) {
-                  $option_value = (string) $option['value'];
-                  if (in_array($option_value, $new_value)) {
-                    $post[$key . '[' . $index++ . ']'] = $option_value;
-                    $done = TRUE;
-                    unset($edit[$name]);
-                  }
-                }
-              }
-              else {
-                // No options selected: do not include any POST data for the
-                // element.
-                $done = TRUE;
-                unset($edit[$name]);
-              }
-            }
-            else {
-              // Single select box.
-              foreach ($options as $option) {
-                if ($new_value == $option['value']) {
-                  $post[$name] = $new_value;
-                  unset($edit[$name]);
+            foreach ($options as $option) {
+              if (is_array($new_value)) {
+                $option_value= (string)$option['value'];
+                if (in_array($option_value, $new_value)) {
+                  $post[$key . '[' . $index++ . ']'] = $option_value;
                   $done = TRUE;
-                  break;
+                  unset($edit[$name]);
                 }
+              }
+              elseif ($new_value == $option['value']) {
+                $post[$name] = $new_value;
+                unset($edit[$name]);
+                $done = TRUE;
               }
             }
             break;
@@ -2060,7 +2042,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
       if (!isset($post[$name]) && !$done) {
         switch ($type) {
           case 'textarea':
-            $post[$name] = (string) $element;
+            $post[$name] = (string)$element;
             break;
           case 'select':
             $single = empty($element['multiple']);
@@ -2074,10 +2056,10 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
               if ($option['selected'] || ($first && $single)) {
                 $first = FALSE;
                 if ($single) {
-                  $post[$name] = (string) $option['value'];
+                  $post[$name] = (string)$option['value'];
                 }
                 else {
-                  $post[$key . '[' . $index++ . ']'] = (string) $option['value'];
+                  $post[$key . '[' . $index++ . ']'] = (string)$option['value'];
                 }
               }
             }
@@ -2086,7 +2068,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
             break;
           case 'submit':
           case 'image':
-            if (isset($submit) && $submit == $value) {
+            if ($submit == $value) {
               $post[$name] = $value;
               $submit_matches = TRUE;
             }
