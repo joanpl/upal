@@ -1112,7 +1112,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   A fully loaded user object with pass_raw property, or FALSE if account
    *   creation fails.
    */
-  protected function drupalCreateUser($permissions = array('access comments', 'access content', 'post comments', 'skip comment approval')) {
+  protected function drupalCreateUser($permissions = array('access comments', 'access content', 'post comments', 'post comments without approval')) {
     // Create a role with the given permission set.
     if (!($rid = $this->drupalCreateRole($permissions))) {
       return FALSE;
@@ -1126,7 +1126,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     $edit['pass']   = user_password();
     $edit['status'] = 1;
 
-    $account = user_save(drupal_anonymous_user(), $edit);
+    $account = user_save('', $edit);
 
     $this->assertTrue(!empty($account->uid), t('User created with name %name and pass %pass', array('%name' => $edit['name'], '%pass' => $edit['pass'])), t('User login'));
     if (empty($account->uid)) {
@@ -1160,15 +1160,22 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     }
 
     // Create new role.
-    $role = new stdClass();
-    $role->name = $name;
-    user_role_save($role);
-    user_role_grant_permissions($role->rid, $permissions);
+//    $role = new stdClass();
+//    $role->name = $name;
+//    user_role_save($role);
+//    user_role_set_permissions($role->name, $permissions);
+    db_query("INSERT INTO {role} (name) VALUES ('%s')", $name);
+    $role = db_fetch_object(db_query("SELECT * FROM {role} WHERE name = '%s'", $name));
 
     $this->assertTrue(isset($role->rid), t('Created role of name: @name, id: @rid', array('@name' => $name, '@rid' => (isset($role->rid) ? $role->rid : t('-n/a-')))), t('Role'));
     if ($role && !empty($role->rid)) {
-      $count = db_query('SELECT COUNT(*) FROM {role_permission} WHERE rid = :rid', array(':rid' => $role->rid))->fetchField();
-      $this->assertTrue($count == count($permissions), t('Created permissions: @perms', array('@perms' => implode(', ', $permissions))), t('Role'));
+//      $count = db_query('SELECT COUNT(*) FROM {role_permission} WHERE rid = :rid', array(':rid' => $role->rid))->fetchField();
+//      $this->assertTrue($count == count($permissions), t('Created permissions: @perms', array('@perms' => implode(', ', $permissions))), t('Role'));
+
+      // Assign permissions to role and mark it for clean-up.
+      db_query("INSERT INTO {permission} (rid, perm) VALUES (%d, '%s')", $role->rid, implode(', ', $permissions));
+      $perm = db_result(db_query("SELECT perm FROM {permission} WHERE rid = %d", $role->rid));
+      $this->assertTrue(count(explode(', ', $perm)) == count($permissions), t('Created permissions: @perms', array('@perms' => implode(', ', $permissions))), t('Role'));
       return $role->rid;
     }
     else {
