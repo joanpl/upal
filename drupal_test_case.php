@@ -1139,7 +1139,8 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   A fully loaded user object with pass_raw property, or FALSE if account
    *   creation fails.
    */
-  protected function drupalCreateUser($permissions = array('access comments', 'access content', 'post comments', 'post comments without approval')) {
+  // [bb] removed comment perms from default: 'access comments', 'post comments', 'post comments without approval'
+  protected function drupalCreateUser($permissions = array('access content')) {
     // Create a role with the given permission set.
     if (!($rid = $this->drupalCreateRole($permissions))) {
       return FALSE;
