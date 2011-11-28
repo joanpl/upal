@@ -198,7 +198,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
   
   public static function assertTrue($condition, $message = '') {
     self::verbose(sprintf("%s %s", __FUNCTION__, $message));
-    parent::assertTrue($condition, $message = '');
+    parent::assertTrue($condition, $message);
     return TRUE;  // needed for simpletest back-comp (e.g. in drupalLogin), but dumb / always true.
   }
   
@@ -224,7 +224,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
 
   // public static function assertContains($needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE) {
   //   self::verbose(sprintf("%s %s", __FUNCTION__, $message));
-  //   parent::assertContains($needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE);
+  //   parent::assertContains($needle, $haystack, $message, $ignoreCase, $checkForObjectIdentity);
   // }
 
   ///////////////
