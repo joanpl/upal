@@ -285,6 +285,8 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   TRUE on pass, FALSE on fail.
    */
   protected function assertRaw($raw, $message = '', $group = 'Other') {
+    //self::verbose("\n=== IN " . __FUNCTION__ . "===\nMessage len: " . strlen($message) . "\n");  // debugging extremely verbose messages
+
     if (!$message) {
       $message = t('Raw "@raw" found', array('@raw' => $raw));
     }
@@ -970,6 +972,8 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   TRUE if the assertion succeeded, FALSE otherwise.
    */
   protected function assertLink($label, $index = 0, $message = '', $group = 'Other') {
+    //self::verbose("\n=== IN " . __FUNCTION__ . "===\nMessage len: " . strlen($message) . "\n");  // debugging extremely verbose messages
+
     $links = $this->xpath('//a[normalize-space(text())=:label]', array(':label' => $label));
     $message = ($message ?  $message : t('Link with label %label found.', array('%label' => $label)));
     return $this->assertTrue(isset($links[$index]), $message, $group);
@@ -1145,7 +1149,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     //$this->log($message, 'verbose');      // this doesn't do anything
     //echo "[verbose] " . $message . "\n";  // this works but is crude
 
-    self::$printer->write($message . "\n\n");  // seems to be a more native approach
+    self::$printer->write("\n" . $message . "\n");  // seems to be a more native approach
   }
 
   /**
@@ -1808,6 +1812,8 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Page on success, or FALSE on failure.
    */
   protected function clickLink($label, $index = 0) {
+    //self::verbose("\n=== IN " . __FUNCTION__ . "===\n");  // debugging extremely verbose messages
+
     $url_before = $this->getUrl();
     $urls = $this->xpath('//a[text()="' . $label . '"]');
 
