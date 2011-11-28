@@ -222,10 +222,10 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     parent::assertEquals($expected, $actual, $message, $delta, $maxDepth, $canonicalize, $ignoreCase);
   }
 
-  public static function assertContains($needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE) {
-    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
-    parent::assertContains($needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE);
-  }
+  // public static function assertContains($needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE) {
+  //   self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+  //   parent::assertContains($needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE);
+  // }
 
   ///////////////
 
