@@ -13,7 +13,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *
    * @var string
    */
-  protected $profile = 'standard';
+  // protected $profile = 'standard';
 
   /**
    * The URL currently loaded in the internal browser.
@@ -129,6 +129,12 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    * The number of redirects followed during the handling of a request.
    */
   protected $redirect_count;
+  
+  
+  /**
+   * stuff to clean up on tearDown()
+   */
+  protected $cleanup = array();
 
 
   /**
@@ -1167,12 +1173,13 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *
    * @param $permissions
    *   Array of permission names to assign to user.
+   * @param $cleanup if TRUE, gets deleted in tearDown()
    * @return
    *   A fully loaded user object with pass_raw property, or FALSE if account
    *   creation fails.
    */
   // [bb] removed comment perms from default: 'access comments', 'post comments', 'post comments without approval'
-  protected function drupalCreateUser($permissions = array('access content')) {
+  protected function drupalCreateUser($permissions = array('access content'), $cleanup = TRUE) {
     // Create a role with the given permission set.
     if (!($rid = $this->drupalCreateRole($permissions))) {
       return FALSE;
@@ -1191,6 +1198,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     $this->assertTrue(!empty($account->uid), t('User created with name %name and pass %pass', array('%name' => $edit['name'], '%pass' => $edit['pass'])), t('User login'));
     if (empty($account->uid)) {
       return FALSE;
+    }
+    
+    // mark for cleanup on tearDown()
+    if ($cleanup) {
+      $this->cleanup['users'][] = $account->nid;
     }
 
     // Add the raw password so that we can log in as this user.
@@ -1684,10 +1696,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    * @param $settings
    *   An associative array of settings to change from the defaults, keys are
    *   node properties, for example 'title' => 'Hello, world!'.
+   * @param $cleanup if TRUE, gets deleted in tearDown()
    * @return
    *   Created node object.
    */
-  protected function drupalCreateNode($settings = array()) {
+  protected function drupalCreateNode($settings = array(), $cleanup = TRUE) {
     // Populate defaults array.
     $settings += array(
       'body'      => $this->randomName(32),
@@ -1732,6 +1745,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
 
     $node = (object) $settings;
     node_save($node);
+    
+    // mark for cleanup on tearDown()
+    if ($cleanup) {
+      $this->cleanup['nodes'][] = $node->nid;
+    }
 
     // Small hack to link revisions to our test user.
 //    db_update('node_revision')
@@ -2378,6 +2396,30 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     $put = file_put_contents($filepath, $this->drupalGetContent());
     if ($put === FALSE) $this->error("Unable to dump content to $filepath.");
     else $this->verbose("Dumped content of " . $this->getUrl() . " to $filepath.");
+  }
+
+
+
+  /**
+   * tear down after tests: added for cleanup.
+   */
+  function tearDown() {
+    if (is_array($this->cleanup['nodes'])) {
+      foreach($this->cleanup['nodes'] as $nid) {
+        $this->verbose("Cleanup: deleting node [{$nid}]");
+        node_delete($nid);
+      }
+    }
+    if (is_array($this->cleanup['users'])) {
+      foreach($this->cleanup['users'] as $uid) {
+        $this->verbose("Cleanup: deleting user [{$uid}]");
+        user_delete(array(), $uid);
+      }
+    }
+    
+    // @todo apply this $cleanup logic to other created stuff.
+    
+    parent::tearDown();
   }
 
 
