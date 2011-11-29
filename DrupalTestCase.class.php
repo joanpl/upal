@@ -1202,7 +1202,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     
     // mark for cleanup on tearDown()
     if ($cleanup) {
-      $this->cleanup['users'][] = $account->nid;
+      $this->cleanup['users'][] = $account->uid;
     }
 
     // Add the raw password so that we can log in as this user.
@@ -2406,14 +2406,19 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
   function tearDown() {
     if (is_array($this->cleanup['nodes'])) {
       foreach($this->cleanup['nodes'] as $nid) {
-        $this->verbose("Cleanup: deleting node [{$nid}]");
-        node_delete($nid);
+        if (is_numeric($nid)) {
+          $this->verbose("Cleanup: deleting node [{$nid}]");
+          node_delete($nid);
+        }
       }
     }
+    
     if (is_array($this->cleanup['users'])) {
       foreach($this->cleanup['users'] as $uid) {
-        $this->verbose("Cleanup: deleting user [{$uid}]");
-        user_delete(array(), $uid);
+        if (is_numeric($uid)) {
+          $this->verbose("Cleanup: deleting user [{$uid}]");
+          user_delete(array(), $uid);          
+        }
       }
     }
     
