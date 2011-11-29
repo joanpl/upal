@@ -1759,6 +1759,19 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     db_query('UPDATE {node_revisions} SET uid = %d WHERE vid = %d', $node->uid, $node->vid);
     return $node;
   }
+  
+  
+  /**
+   * [added] wrapper around variable_set, saves original value for restore on tearDown.
+   */
+  function drupalVariableSet($key, $value, $cleanup = TRUE) {
+    if ($cleanup) {
+      $this->cleanup['variables'][$key] = variable_get($key, 0);
+    }
+    
+    variable_set($key, $value);
+  }
+  
 
   /**
    * Creates a custom content type based on default settings.
@@ -2406,6 +2419,8 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    * tear down after tests: added for cleanup.
    */
   function tearDown() {
+    
+    // nodes
     if (is_array($this->cleanup['nodes'])) {
       foreach($this->cleanup['nodes'] as $nid) {
         if (is_numeric($nid)) {
@@ -2415,12 +2430,21 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
       }
     }
     
+    // users
     if (is_array($this->cleanup['users'])) {
       foreach($this->cleanup['users'] as $uid) {
         if (is_numeric($uid)) {
           $this->verbose("Cleanup: deleting user [{$uid}]");
           user_delete(array(), $uid);          
         }
+      }
+    }
+    
+    // [restore] variables
+    if (is_array($this->cleanup['variables'])) {
+      foreach($this->cleanup['variables'] as $key => $value) {
+        $this->verbose("Cleanup: restoring variable [{$key}]");
+        variable_set($key, $value);
       }
     }
     
