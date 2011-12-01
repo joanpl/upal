@@ -2431,6 +2431,32 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
 
 
   /**
+   * set up environment for tests
+   * (with existing site sandbox, this can be very lightweight/nonexistent)
+   */
+  function setUp() {
+    parent::setUp();
+  }
+  
+
+  /**
+   * login (impersonate a user)?
+   * runs in setUp() after bootstrap
+   * adapted from drush_drupal_login()
+   * (@see RUNAS_USER in phpunit.xml and upal.php)
+   */
+  protected function runAsUser() {
+   if (! empty($GLOBALS['RUNAS_USER'])) {
+      global $user;
+      $user = user_load(is_numeric($GLOBALS['RUNAS_USER']) ? array('uid' => $GLOBALS['RUNAS_USER']) : array('name' => $GLOBALS['RUNAS_USER']));
+      if (empty($user)) {
+        $this->error(t("Unable to login as user @user", array('user' => $GLOBALS['RUNAS_USER'])));
+      }
+    }
+  }
+
+
+  /**
    * tear down after tests: added for cleanup.
    */
   function tearDown() {
@@ -2484,6 +2510,8 @@ class DrupalUnitTestCase extends DrupalTestCase {
     }
     require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
     drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
+
+    $this->runAsUser();
   }
 }
 
@@ -2571,6 +2599,7 @@ class DrupalWebTestCase extends DrupalTestCase {
     require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
     drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
 
+    $this->runAsUser();
 
     // [bb] no longer - modules already enabled in site
     /*

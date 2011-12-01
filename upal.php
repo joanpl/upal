@@ -72,4 +72,10 @@ function upal_init() {
 
   $_SERVER['HTTP_HOST'] = $url['host'];
   $_SERVER['SERVER_PORT'] = array_key_exists('port', $url) ? $url['port'] : NULL;
+
+
+  // [bb] login to tests as a user? see RUNAS_USER in phpunit.xml
+  $GLOBALS['RUNAS_USER'] = getenv('RUNAS_USER') ? getenv('RUNAS_USER') : NULL;
+  // (rest in setUp())
+
 }
