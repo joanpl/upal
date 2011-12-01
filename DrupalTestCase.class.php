@@ -1701,8 +1701,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Created node object.
    */
   protected function drupalCreateNode($settings = array(), $cleanup = TRUE) {
-    // Populate defaults array.
-    $settings += array(
+   // cast to array if not already 
+   if (! is_array($settings)) $settings = (array) $settings; 
+
+   // Populate defaults array.
+    $settings = array_merge(array(
       'body'      => $this->randomName(32),
       'title'     => $this->randomName(8),
       'comment'   => 2,
@@ -1717,7 +1720,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
       'type'      => 'page',
       'revisions' => NULL,
       'taxonomy'  => NULL,
-    );
+    ), $settings);
 
     // Use the original node's created time for existing nodes.
     if (isset($settings['created']) && !isset($settings['date'])) {
@@ -1736,26 +1739,23 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
       }
     }
 
-//    // Merge body field value and format separately.
-//    $body = array(
-//      'value' => $this->randomName(32),
-//      'format' => FILTER_FORMAT_DEFAULT
-//    );
-//    $settings['body'][FIELD_LANGUAGE_NONE][0] += $body;
 
+    // back to object
     $node = (object) $settings;
     node_save($node);
     
+    // if new, verify nid exists in table
+    if (isset($node->is_new) && $node->is_new == TRUE) {
+      $last_nid = db_result(db_query("SELECT nid from {node} ORDER BY nid DESC LIMIT 1"));
+      $this->assertEqual($last_nid, $node->nid, t("Last nid in node table (@last) matches new node (@new)", array('@last' => $last_nid, '@new' => $node->nid)));
+    }
+
     // mark for cleanup on tearDown()
     if ($cleanup) {
       $this->cleanup['nodes'][] = $node->nid;
     }
 
     // Small hack to link revisions to our test user.
-//    db_update('node_revision')
-//      ->fields(array('uid' => $node->uid))
-//      ->condition('vid', $node->vid)
-//      ->execute();
     db_query('UPDATE {node_revisions} SET uid = %d WHERE vid = %d', $node->uid, $node->vid);
     return $node;
   }
