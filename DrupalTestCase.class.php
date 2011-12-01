@@ -1485,7 +1485,8 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
         $this->pass(t('Valid HTML found on "@path"', array('@path' => $this->getUrl())), t('Browser'));
         // It's much easier to work with simplexml than DOM, luckily enough
         // we can just simply import our DOM tree.
-        $this->elements = simplexml_import_dom($htmlDom);
+        // [bb] '@' to suppress 'simplexml_import_dom(): Invalid Nodetype to import' warnings, not sure how to eliminate
+        $this->elements = @simplexml_import_dom($htmlDom);
       }
     }
     if (!$this->elements) {
