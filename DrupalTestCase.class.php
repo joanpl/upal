@@ -1172,24 +1172,30 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    * names given on the privileges page.
    *
    * @param $permissions
-   *   Array of permission names to assign to user.
+   *   Array of permission names to assign to user. if $roles is specified, this can be empty.
+   * @param $roles allow actual roles to be specified rather than creating a new one
    * @param $cleanup if TRUE, gets deleted in tearDown()
    * @return
    *   A fully loaded user object with pass_raw property, or FALSE if account
    *   creation fails.
    */
   // [bb] removed comment perms from default: 'access comments', 'post comments', 'post comments without approval'
-  protected function drupalCreateUser($permissions = array('access content'), $cleanup = TRUE) {
-    // Create a role with the given permission set.
-    if (!($rid = $this->drupalCreateRole($permissions))) {
-      return FALSE;
+  protected function drupalCreateUser($permissions = array('access content'), $roles = NULL, $cleanup = TRUE) {
+
+    // Create a role with the given permission set (unless role specified)
+    if (empty($roles)) {
+      if (!($rid = $this->drupalCreateRole($permissions))) {
+        return FALSE;
+      }
+      $roles = array($rid);
     }
+    elseif (is_int($roles)) $roles = array($roles);   // single role
 
     // Create a user assigned to that role.
     $edit = array();
     $edit['name']   = $this->randomName();
     $edit['mail']   = $edit['name'] . '@example.com';
-    $edit['roles']  = array($rid => $rid);
+    $edit['roles']  = array_combine($roles, $roles);
     $edit['pass']   = user_password();
     $edit['status'] = 1;
 
@@ -1219,6 +1225,8 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   (optional) String for the name of the role.  Defaults to a random string.
    * @return
    *   Role ID of newly created role, or FALSE if role creation failed.
+   *
+   * @TODO add roles to $cleanup/tearDown items
    */
   protected function drupalCreateRole(array $permissions, $name = NULL) {
     // Generate random name if it was not passed.
