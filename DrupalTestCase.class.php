@@ -1747,9 +1747,16 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
       }
     }
 
-
     // back to object
     $node = (object) $settings;
+
+
+    // make sure the user can create this type of node.
+    // otherwise fails w/o useful info.
+    // (@see RUNAS_USER in phpunit.xml)
+    $this->assertTrue(user_access('create ' . $node->type . ' content'), 'User has access to create ' . (string)$node->type . ' nodes');
+
+
     node_save($node);
     
     // if new, verify nid exists in table
