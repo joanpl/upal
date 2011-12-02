@@ -1316,7 +1316,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
         CURLOPT_SSL_VERIFYPEER => FALSE, // Required to make the tests run on https.
         CURLOPT_SSL_VERIFYHOST => FALSE, // Required to make the tests run on https.
         CURLOPT_HEADERFUNCTION => array(&$this, 'curlHeaderCallback'),
-        CURLOPT_USERAGENT => 'Upal',
+        CURLOPT_USERAGENT => 'Upal Automated Test Agent',
       );
 
       // http credentials optionally in phpunit.xml

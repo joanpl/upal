@@ -26,6 +26,11 @@ upal_init();
  * Initialize our environment at the start of each run (i.e. suite).
  */
 function upal_init() {
+  // detect when in the outer test runner. //
+  // (dif from being in a test's curl request. use user-agent for that.)
+  global $in_upal_test;
+  $in_upal_test = TRUE;
+
   // UNISH_DRUSH value can come from phpunit.xml or `which drush`.
   if (!defined('UNISH_DRUSH')) {
     // Let the UNISH_DRUSH environment variable override if set.
