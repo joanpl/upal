@@ -2410,7 +2410,10 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     //  }
     //}
 
-    $filename = $this->getUrl();
+    // create a filename that can be outputted in test log and copy/pasted to browser to eyeball.
+    // encoded chars mess up filename-URL match, unescape.
+    $filename = urldecode($this->getUrl());
+    $filename = str_replace(' ', '-', $filename);
     $filename = str_replace('/', '-', $filename);
     $filename = str_replace(':', '', $filename);
     $filename = str_replace('.', '_', $filename);
