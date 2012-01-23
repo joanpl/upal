@@ -281,13 +281,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     if (!$message) {
       $message = t('Raw "@raw" found', array('@raw' => $raw));
     }
-
-    self::verbose("\n=== STILL IN " . __FUNCTION__ . "===\n");
-
-    $ret = $this->assertContains($raw, $this->drupalGetContent(), $message);
-    self::verbose("\n=== response from assertContains in assertRaw: " . print_r($ret,TRUE) . "===\n");
-
-    return $ret;
+    return $this->assertContains($raw, $this->drupalGetContent(), $message);
   }
 
   /**
@@ -307,6 +301,29 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     }
     return $this->assertNotContains($raw, $this->drupalGetContent(), $message);
   }
+
+
+  /**
+   * override assertContains. doesn't seem to be working - assertions just get skipped over.
+   * working around for now.
+   */
+  public static function assertContains($needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE) {
+    // only use this override for strings. [logic adapted from phpunit]
+    if (!is_string($haystack) || !is_string($needle)) {
+      self::verbose("assertContains haystack is not a string, defer to parent/default");
+      return parent::assertContains($needle, $haystack, $message, $ignoreCase, $checkForObjectIdentity);
+    }
+
+    // strings: skip the Constraint building, just use assertTrue w/ same logic.
+    if ($ignoreCase) {
+      $match = (stripos($haystack, $needle) !== FALSE);
+    } else {
+      $match = (strpos($haystack, $needle) !== FALSE);
+    }
+
+    return self::assertTrue($match, $message);
+  }
+
 
   /**
    * Pass if the text IS found on the text version of the page. The text version
