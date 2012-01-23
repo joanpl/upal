@@ -2414,6 +2414,9 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     $filename = str_replace('/', '-', $filename);
     $filename = str_replace(':', '', $filename);
     $filename = str_replace('.', '_', $filename);
+    
+    // question mark in URL messes up dumped file when loading, browser thinks it's a querystring
+    $filename = str_replace('?', '___', $filename);
 
     // add counter to identify order and prevent dups/overrides of same URL
     static $count = 0;
