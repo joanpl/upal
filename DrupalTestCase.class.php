@@ -153,13 +153,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *
    * @param $message
    *   The message to display along with the assertion.
-   * @param $group
-   *   The type of assertion - examples are "Browser", "PHP".
    * @return
    *   TRUE.
    */
-  protected function pass($message = NULL, $group = 'Other') {
-    return $this->assertTrue(TRUE, $message, $group);
+  protected function pass($message = NULL) {
+    return $this->assertTrue(TRUE, $message);
   }
 
   /**
@@ -167,13 +165,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *
    * @param $message
    *   The message to display along with the assertion.
-   * @param $group
-   *   The type of assertion - examples are "Browser", "PHP".
    * @return
    *   FALSE.
    */
-  //protected function fail($message = NULL, $group = 'Other') {
-  //  return $this->assertTrue(FALSE, $message, $group);
+  //protected function fail($message = NULL) {
+  //  return $this->assertTrue(FALSE, $message);
   //}
 
   /**
@@ -195,7 +191,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
       return $this->pass($message, $group);
     }
     // @todo Pass along $caller info.
-    return $this->fail('exception: ' . $message, $group);
+    return $this->fail('exception: ' . $message);
   }
 
 
@@ -245,7 +241,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     return $this->assertNotEquals($expected, $actual, $message);
   }
 
-  function assertIdentical($first, $second, $message = '', $group = 'Other') {
+  function assertIdentical($first, $second, $message = '') {
     return $this->assertSame($first, $second, $message);
   }
 
@@ -261,20 +257,18 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   (optional) Any additional options to pass for $path to url().
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to, defaults to 'Other'.
    *
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertUrl($path, array $options = array(), $message = '', $group = 'Other') {
+  protected function assertUrl($path, array $options = array(), $message = '') {
     if (!$message) {
       $message = t('Current URL is @url.', array(
         '@url' => var_export(url($path, $options), TRUE),
       ));
     }
     $options['absolute'] = TRUE;
-    return $this->assertEqual($this->getUrl(), url($path, $options), $message, $group);
+    return $this->assertEqual($this->getUrl(), url($path, $options), $message);
   }
 
   /**
@@ -285,18 +279,22 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Raw (HTML) string to look for.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to, defaults to 'Other'.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertRaw($raw, $message = '', $group = 'Other') {
-    //self::verbose("\n=== IN " . __FUNCTION__ . "===\nMessage len: " . strlen($message) . "\n");  // debugging extremely verbose messages
+  protected function assertRaw($raw, $message = '') {
+    self::verbose("\n=== IN " . __FUNCTION__ . "===\nMessage len: " . strlen($message) . "\n");  // debugging extremely verbose messages
 
     if (!$message) {
       $message = t('Raw "@raw" found', array('@raw' => $raw));
     }
-    return $this->assertContains($raw, $this->drupalGetContent(), $message, $group);
+
+    self::verbose("\n=== STILL IN " . __FUNCTION__ . "===\n");
+
+    $ret = $this->assertContains($raw, $this->drupalGetContent(), $message);
+    self::verbose("\n=== response from assertContains in assertRaw: " . print_r($ret,TRUE) . "===\n");
+
+    return $ret;
   }
 
   /**
@@ -307,16 +305,14 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Raw (HTML) string to look for.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to, defaults to 'Other'.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertNoRaw($raw, $message = '', $group = 'Other') {
+  protected function assertNoRaw($raw, $message = '') {
     if (!$message) {
       $message = t('Raw "@raw" not found', array('@raw' => $raw));
     }
-    return $this->assertNotContains($raw, $this->drupalGetContent(), $message, $group);
+    return $this->assertNotContains($raw, $this->drupalGetContent(), $message);
   }
 
   /**
@@ -328,13 +324,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Plain text to look for.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to, defaults to 'Other'.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertText($text, $message = '', $group = 'Other') {
-    return $this->assertTextHelper($text, $message, $group, FALSE);
+  protected function assertText($text, $message = '') {
+    return $this->assertTextHelper($text, $message, FALSE);
   }
 
   /**
@@ -346,13 +340,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Plain text to look for.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to, defaults to 'Other'.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertNoText($text, $message = '', $group = 'Other') {
-    return $this->assertTextHelper($text, $message, $group, TRUE);
+  protected function assertNoText($text, $message = '') {
+    return $this->assertTextHelper($text, $message, TRUE);
   }
 
   /**
@@ -364,21 +356,19 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Plain text to look for.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to.
    * @param $not_exists
    *   TRUE if this text should not exist, FALSE if it should.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertTextHelper($text, $message = '', $group, $not_exists) {
+  protected function assertTextHelper($text, $message = '', $not_exists) {
     if ($this->plainTextContent === FALSE) {
       $this->plainTextContent = filter_xss($this->drupalGetContent(), array());
     }
     if (!$message) {
       $message = !$not_exists ? t('"@text" found', array('@text' => $text)) : t('"@text" not found', array('@text' => $text));
     }
-    return $this->assertTrue($not_exists == (strpos($this->plainTextContent, $text) === FALSE), $message, $group);
+    return $this->assertTrue($not_exists == (strpos($this->plainTextContent, $text) === FALSE), $message);
   }
 
   /**
@@ -392,13 +382,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Plain text to look for.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to, defaults to 'Other'.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertUniqueText($text, $message = '', $group = 'Other') {
-    return $this->assertUniqueTextHelper($text, $message, $group, TRUE);
+  protected function assertUniqueText($text, $message = '') {
+    return $this->assertUniqueTextHelper($text, $message, TRUE);
   }
 
   /**
@@ -412,13 +400,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Plain text to look for.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to, defaults to 'Other'.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertNoUniqueText($text, $message = '', $group = 'Other') {
-    return $this->assertUniqueTextHelper($text, $message, $group, FALSE);
+  protected function assertNoUniqueText($text, $message = '') {
+    return $this->assertUniqueTextHelper($text, $message, FALSE);
   }
 
   /**
@@ -430,14 +416,12 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Plain text to look for.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to.
    * @param $be_unique
    *   TRUE if this text should be found only once, FALSE if it should be found more than once.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertUniqueTextHelper($text, $message = '', $group, $be_unique) {
+  protected function assertUniqueTextHelper($text, $message = '', $be_unique = FALSE) {
     if ($this->plainTextContent === FALSE) {
       $this->plainTextContent = filter_xss($this->drupalGetContent(), array());
     }
@@ -446,11 +430,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     }
     $first_occurance = strpos($this->plainTextContent, $text);
     if ($first_occurance === FALSE) {
-      return $this->assertTrue(FALSE, $message, $group);
+      return $this->assertTrue(FALSE, $message);
     }
     $offset = $first_occurance + strlen($text);
     $second_occurance = strpos($this->plainTextContent, $text, $offset);
-    return $this->assertTrue($be_unique == ($second_occurance === FALSE), $message, $group);
+    return $this->assertTrue($be_unique == ($second_occurance === FALSE), $message);
   }
 
   /**
@@ -460,16 +444,14 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Perl regex to look for including the regex delimiters.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertPattern($pattern, $message = '', $group = 'Other') {
+  protected function assertPattern($pattern, $message = '') {
     if (!$message) {
       $message = t('Pattern "@pattern" found', array('@pattern' => $pattern));
     }
-    return $this->assertTrue((bool) preg_match($pattern, $this->drupalGetContent()), $message, $group);
+    return $this->assertTrue((bool) preg_match($pattern, $this->drupalGetContent()), $message);
   }
 
   /**
@@ -479,16 +461,14 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Perl regex to look for including the regex delimiters.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertNoPattern($pattern, $message = '', $group = 'Other') {
+  protected function assertNoPattern($pattern, $message = '') {
     if (!$message) {
       $message = t('Pattern "@pattern" not found', array('@pattern' => $pattern));
     }
-    return $this->assertTrue(!preg_match($pattern, $this->drupalGetContent()), $message, $group);
+    return $this->assertTrue(!preg_match($pattern, $this->drupalGetContent()), $message);
   }
 
   /**
@@ -498,12 +478,10 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   The string the title should be.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertTitle($title, $message = '', $group = 'Other') {
+  protected function assertTitle($title, $message = '') {
     $actual = (string) current($this->xpath('//title'));
     if (!$message) {
       $message = t('Page title @actual is equal to @expected.', array(
@@ -511,7 +489,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
         '@expected' => var_export($title, TRUE),
       ));
     }
-    return $this->assertEqual($actual, $title, $message, $group);
+    return $this->assertEqual($actual, $title, $message);
   }
 
   /**
@@ -521,12 +499,10 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   The string the title should not be.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertNoTitle($title, $message = '', $group = 'Other') {
+  protected function assertNoTitle($title, $message = '') {
     $actual = (string) current($this->xpath('//title'));
     if (!$message) {
       $message = t('Page title @actual is not equal to @unexpected.', array(
@@ -534,7 +510,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
         '@unexpected' => var_export($title, TRUE),
       ));
     }
-    return $this->assertNotEqual($actual, $title, $message, $group);
+    return $this->assertNotEqual($actual, $title, $message);
   }
 
   /**
@@ -546,13 +522,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   (optional) Value of the field to assert.
    * @param $message
    *   (optional) Message to display.
-   * @param $group
-   *   (optional) The group this message belongs to.
    *
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertFieldByXPath($xpath, $value = NULL, $message = '', $group = 'Other') {
+  protected function assertFieldByXPath($xpath, $value = NULL, $message = '') {
     $fields = $this->xpath($xpath);
 
     // If value specified then check array for match.
@@ -585,7 +559,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
         }
       }
     }
-    return $this->assertTrue($fields && $found, $message, $group);
+    return $this->assertTrue($fields && $found, $message);
   }
 
   /**
@@ -619,13 +593,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   (optional) Value of the field to assert.
    * @param $message
    *   (optional) Message to display.
-   * @param $group
-   *   (optional) The group this message belongs to.
    *
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertNoFieldByXPath($xpath, $value = NULL, $message = '', $group = 'Other') {
+  protected function assertNoFieldByXPath($xpath, $value = NULL, $message = '') {
     $fields = $this->xpath($xpath);
 
     // If value specified then check array for match.
@@ -640,7 +612,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
         }
       }
     }
-    return $this->assertFalse($fields && $found, $message, $group);
+    return $this->assertFalse($fields && $found, $message);
   }
 
   /**
@@ -652,8 +624,6 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Value of the field to assert.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
@@ -670,8 +640,6 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Value of the field to assert.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
@@ -688,8 +656,6 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Value of the field to assert.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
@@ -706,8 +672,6 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Value of the field to assert.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
@@ -788,13 +752,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Name or id of field to assert.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertField($field, $message = '', $group = 'Other') {
-    return $this->assertFieldByXPath($this->constructFieldXpath('name', $field) . '|' . $this->constructFieldXpath('id', $field), NULL, $message, $group);
+  protected function assertField($field, $message = '') {
+    return $this->assertFieldByXPath($this->constructFieldXpath('name', $field) . '|' . $this->constructFieldXpath('id', $field), NULL, $message);
   }
 
   /**
@@ -804,13 +766,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Name or id of field to assert.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to.
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertNoField($field, $message = '', $group = 'Other') {
-    return $this->assertNoFieldByXPath($this->constructFieldXpath('name', $field) . '|' . $this->constructFieldXpath('id', $field), NULL, $message, $group);
+  protected function assertNoField($field, $message = '') {
+    return $this->assertNoFieldByXPath($this->constructFieldXpath('name', $field) . '|' . $this->constructFieldXpath('id', $field), NULL, $message);
   }
 
   /**
@@ -818,8 +778,6 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to.
    * @param $ids_to_skip
    *   An optional array of ids to skip when checking for duplicates. It is
    *   always a bug to have duplicate HTML IDs, so this parameter is to enable
@@ -830,17 +788,17 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertNoDuplicateIds($message = '', $group = 'Other', $ids_to_skip = array()) {
+  protected function assertNoDuplicateIds($message = '', $ids_to_skip = array()) {
     $status = TRUE;
     foreach ($this->xpath('//*[@id]') as $element) {
       $id = (string) $element['id'];
       if (isset($seen_ids[$id]) && !in_array($id, $ids_to_skip)) {
-        $this->fail(t('The HTML ID %id is unique.', array('%id' => $id)), $group);
+        $this->fail(t('The HTML ID %id is unique.', array('%id' => $id)));
         $status = FALSE;
       }
       $seen_ids[$id] = TRUE;
     }
-    return $this->assertTrue($status, $message, $group);
+    return $this->assertTrue($status, $message);
   }
 
   /**
@@ -972,17 +930,15 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Link position counting from zero.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to, defaults to 'Other'.
    * @return
    *   TRUE if the assertion succeeded, FALSE otherwise.
    */
-  protected function assertLink($label, $index = 0, $message = '', $group = 'Other') {
+  protected function assertLink($label, $index = 0, $message = '') {
     //self::verbose("\n=== IN " . __FUNCTION__ . "===\nMessage len: " . strlen($message) . "\n");  // debugging extremely verbose messages
 
     $links = $this->xpath('//a[normalize-space(text())=:label]', array(':label' => $label));
     $message = ($message ?  $message : t('Link with label %label found.', array('%label' => $label)));
-    return $this->assertTrue(isset($links[$index]), $message, $group);
+    return $this->assertTrue(isset($links[$index]), $message);
   }
 
   /**
@@ -994,15 +950,13 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Link position counting from zero.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to, defaults to 'Other'.
    * @return
    *   TRUE if the assertion succeeded, FALSE otherwise.
    */
-  protected function assertNoLink($label, $message = '', $group = 'Other') {
+  protected function assertNoLink($label, $message = '') {
     $links = $this->xpath('//a[normalize-space(text())=:label]', array(':label' => $label));
     $message = ($message ?  $message : t('Link with label %label not found.', array('%label' => $label)));
-    return $this->assertTrue(empty($links), $message, $group);
+    return $this->assertTrue(empty($links), $message);
   }
 
   /**
@@ -1014,16 +968,14 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   Link position counting from zero.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to, defaults to 'Other'.
    *
    * @return
    *   TRUE if the assertion succeeded, FALSE otherwise.
    */
-  protected function assertLinkByHref($href, $index = 0, $message = '', $group = 'Other') {
+  protected function assertLinkByHref($href, $index = 0, $message = '') {
     $links = $this->xpath('//a[contains(@href, :href)]', array(':href' => $href));
     $message = ($message ?  $message : t('Link containing href %href found.', array('%href' => $href)));
-    return $this->assertTrue(isset($links[$index]), $message, $group);
+    return $this->assertTrue(isset($links[$index]), $message);
   }
 
   /**
@@ -1033,16 +985,14 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   The full or partial value of the 'href' attribute of the anchor tag.
    * @param $message
    *   Message to display.
-   * @param $group
-   *   The group this message belongs to, defaults to 'Other'.
    *
    * @return
    *   TRUE if the assertion succeeded, FALSE otherwise.
    */
-  protected function assertNoLinkByHref($href, $message = '', $group = 'Other') {
+  protected function assertNoLinkByHref($href, $message = '') {
     $links = $this->xpath('//a[contains(@href, :href)]', array(':href' => $href));
     $message = ($message ?  $message : t('No link containing href %href found.', array('%href' => $href)));
-    return $this->assertTrue(empty($links), $message, $group);
+    return $this->assertTrue(empty($links), $message);
   }
 
   /**
