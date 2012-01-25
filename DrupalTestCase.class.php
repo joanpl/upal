@@ -304,8 +304,26 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
 
 
   /**
-   * override assertContains. doesn't seem to be working - assertions just get skipped over.
-   * working around for now.
+   * helper for overridden assertContains and assertNotContains
+   */
+  public static function assertContainsHelper($contains = TRUE, $needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE) {
+    // strings: skip the Constraint building, just use assertTrue w/ same logic.
+    if ($ignoreCase) {
+      $match = (stripos($haystack, $needle) !== FALSE);
+    } else {
+      $match = (strpos($haystack, $needle) !== FALSE);
+    }
+    
+    if ($contains) {
+      return self::assertTrue($match, $message);
+    }
+    else {
+      return self::assertFalse($match, $message);
+    }
+  }
+
+  /**
+   * override assertContains. [default function doesn't seem to be working - assertions just get skipped over.]
    */
   public static function assertContains($needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE) {
     // only use this override for strings. [logic adapted from phpunit]
@@ -313,15 +331,23 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
       self::verbose("assertContains haystack is not a string, defer to parent/default");
       return parent::assertContains($needle, $haystack, $message, $ignoreCase, $checkForObjectIdentity);
     }
+    
+    return self::assertContainsHelper(TRUE, $needle, $haystack, $message, $ignoreCase, $checkForObjectIdentity);
+  }
 
-    // strings: skip the Constraint building, just use assertTrue w/ same logic.
-    if ($ignoreCase) {
-      $match = (stripos($haystack, $needle) !== FALSE);
-    } else {
-      $match = (strpos($haystack, $needle) !== FALSE);
+  /**
+   * override assertNotContains. [default function doesn't seem to be working - assertions just get skipped over.]
+   * similar to overridden assertContains.
+   * used by assertNoRaw.
+   */
+  public static function assertNotContains($needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE) {
+    // only use this override for strings. [logic adapted from phpunit]
+    if (!is_string($haystack) || !is_string($needle)) {
+      self::verbose("assertNotContains haystack is not a string, defer to parent/default");
+      return parent::assertNotContains($needle, $haystack, $message, $ignoreCase, $checkForObjectIdentity);
     }
 
-    return self::assertTrue($match, $message);
+    return self::assertContainsHelper(FALSE, $needle, $haystack, $message, $ignoreCase, $checkForObjectIdentity);
   }
 
 
@@ -2438,7 +2464,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
       foreach($this->cleanup['users'] as $uid) {
         if (is_numeric($uid)) {
           $this->verbose("Cleanup: deleting user [{$uid}]");
-          user_delete(array(), $uid);          
+          user_delete(array(), $uid);
         }
       }
     }
