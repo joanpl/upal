@@ -2602,8 +2602,8 @@ class DrupalWebTestCase extends DrupalTestCase {
     */
 
     // Use the test mail class instead of the default mail handler class.
-    variable_set('mail_system', array('default-system' => 'TestingMailSystem'));
-
+    // (variable is set in actual test site, should be set thru curl'd site-under-test, then reverted in tearDown.)
+    $this->drupalVariableSet('smtp_library', dirname(__FILE__) . '/upal.mail.inc');
   }
 }
 
