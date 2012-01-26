@@ -1,5 +1,13 @@
 Drupal's test suite based on PHPUnit (http://www.phpunit.de/).
 
+FORK NOTE
+---------
+This fork by New Leaf Digital is a backport to Drupal 6, with a new approach (using an actual test site), and bug fixes.
+
+Blog post about this project is here:
+http://benbuckman.net/tech/11/12/unconventional-unit-testing-drupal-6-phpunit-upal-and-jenkins
+
+
 Usage
 --------
 - Install PHPUnit (see below)
