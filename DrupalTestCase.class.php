@@ -157,7 +157,9 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   TRUE.
    */
   protected function pass($message = NULL) {
-    return $this->assertTrue(TRUE, $message);
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertTrue(TRUE, $message, FALSE);
   }
 
   /**
@@ -169,7 +171,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   FALSE.
    */
   //protected function fail($message = NULL) {
-  //  return $this->assertTrue(FALSE, $message);
+  //  $this->assertTrue(FALSE, $message);
   //}
 
   /**
@@ -188,24 +190,26 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     if ($group == 'User notice') {
       // Since 'User notice' is set by trigger_error() which is used for debug
       // set the message to a status of 'debug'.
-      return $this->pass($message, $group);
+      $this->pass($message, $group);
+      return;
     }
     // @todo Pass along $caller info.
-    return $this->fail('exception: ' . $message);
+    $this->fail('exception: ' . $message);
   }
 
 
   ///////////////
-  // [bb] overrides added simply to add verbose output
-  
-  public static function assertTrue($condition, $message = '') {
-    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+  // overrides added simply to add verbose output
+
+  // @param $verbose toggle FALSE when passing from other assertion
+  public static function assertTrue($condition, $message = '', $verbose = TRUE) {
+    if ($verbose) self::verbose(sprintf("%s %s", __FUNCTION__, $message));
     parent::assertTrue($condition, $message);
     return TRUE;  // needed for simpletest back-comp (e.g. in drupalLogin), but dumb / always true.
   }
   
-  public static function assertFalse($condition, $message = '') {
-    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+  public static function assertFalse($condition, $message = '', $verbose = TRUE) {
+    if ($verbose) self::verbose(sprintf("%s %s", __FUNCTION__, $message));
     parent::assertFalse($condition, $message = '');
   }
   
@@ -219,27 +223,47 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     parent::assertNull($actual, $message);
   }
 
-  public static function assertEquals($expected, $actual, $message = '', $delta = 0, $maxDepth = 10, $canonicalize = FALSE, $ignoreCase = FALSE) {
-    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+  public static function assertEquals($expected, $actual, $message = '', $delta = 0, $maxDepth = 10, $canonicalize = FALSE, $ignoreCase = FALSE, $verbose = TRUE) {
+    if ($verbose) self::verbose(sprintf("%s %s", __FUNCTION__, $message));
     parent::assertEquals($expected, $actual, $message, $delta, $maxDepth, $canonicalize, $ignoreCase);
   }
 
-  ///////////////
-
-  // legacy supports
-
-  function assertEqual($expected, $actual, $message = '') {
-    return $this->assertEquals($expected, $actual, $message);
+  public static function assertNotEquals($expected, $actual, $message = '', $delta = 0, $maxDepth = 10, $canonicalize = FALSE, $ignoreCase = FALSE, $verbose = TRUE) {
+    if ($verbose) self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    parent::assertNotEquals($expected, $actual, $message, $delta, $maxDepth, $canonicalize, $ignoreCase);
   }
 
-  function assertNotEqual($expected, $actual, $message = '') {
-    return $this->assertNotEquals($expected, $actual, $message);
+  public static function assertSame($first, $second, $message = '') {
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    parent::assertSame($first, $second, $message);
   }
 
-  function assertIdentical($first, $second, $message = '') {
-    return $this->assertSame($first, $second, $message);
+  public static function assertNotSame($first, $second, $message = '') {
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    parent::assertNotSame($first, $second, $message);
   }
 
+
+  // legacy
+  public static function assertIdentical($first, $second, $message = '') {
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    parent::assertSame($first, $second, $message);
+  }
+
+  public static function assertNotIdentical($first, $second, $message = '') {
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    parent::assertNotSame($first, $second, $message);
+  }
+
+
+
+  // legacy
+  public static function assertEqual($expected, $actual, $message = '') {
+    self::assertEquals($expected, $actual, $message);
+  }
+  public static function assertNotEqual($expected, $actual, $message = '') {
+    self::assertNotEquals($expected, $actual, $message);
+  }
 
 
 
@@ -263,8 +287,12 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
       ));
     }
     $options['absolute'] = TRUE;
-    return $this->assertEqual($this->getUrl(), url($path, $options), $message);
+
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+ 
+    $this->assertEquals($this->getUrl(), url($path, $options), $message, FALSE);
   }
+
 
   /**
    * Pass if the raw text IS found on the loaded page, fail otherwise. Raw text
@@ -281,7 +309,10 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     if (!$message) {
       $message = t('Raw "@raw" found', array('@raw' => $raw));
     }
-    return $this->assertContains($raw, $this->drupalGetContent(), $message);
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertContains($raw, $this->drupalGetContent(), $message, FALSE);
+    return;
   }
 
   /**
@@ -299,55 +330,21 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     if (!$message) {
       $message = t('Raw "@raw" not found', array('@raw' => $raw));
     }
-    return $this->assertNotContains($raw, $this->drupalGetContent(), $message);
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertNotContains($raw, $this->drupalGetContent(), $message, FALSE);
+    return;
   }
 
 
-  /**
-   * helper for overridden assertContains and assertNotContains
-   */
-  public static function assertContainsHelper($contains = TRUE, $needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE) {
-    // strings: skip the Constraint building, just use assertTrue w/ same logic.
-    if ($ignoreCase) {
-      $match = (stripos($haystack, $needle) !== FALSE);
-    } else {
-      $match = (strpos($haystack, $needle) !== FALSE);
-    }
-    
-    if ($contains) {
-      return self::assertTrue($match, $message);
-    }
-    else {
-      return self::assertFalse($match, $message);
-    }
+  public static function assertContains($needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE, $verbose = TRUE) {
+    if ($verbose) self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    parent::assertContains($needle, $haystack, $message, $ignoreCase, $checkForObjectIdentity);
   }
 
-  /**
-   * override assertContains. [default function doesn't seem to be working - assertions just get skipped over.]
-   */
-  public static function assertContains($needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE) {
-    // only use this override for strings. [logic adapted from phpunit]
-    if (!is_string($haystack) || !is_string($needle)) {
-      self::verbose("assertContains haystack is not a string, defer to parent/default");
-      return parent::assertContains($needle, $haystack, $message, $ignoreCase, $checkForObjectIdentity);
-    }
-    
-    return self::assertContainsHelper(TRUE, $needle, $haystack, $message, $ignoreCase, $checkForObjectIdentity);
-  }
-
-  /**
-   * override assertNotContains. [default function doesn't seem to be working - assertions just get skipped over.]
-   * similar to overridden assertContains.
-   * used by assertNoRaw.
-   */
-  public static function assertNotContains($needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE) {
-    // only use this override for strings. [logic adapted from phpunit]
-    if (!is_string($haystack) || !is_string($needle)) {
-      self::verbose("assertNotContains haystack is not a string, defer to parent/default");
-      return parent::assertNotContains($needle, $haystack, $message, $ignoreCase, $checkForObjectIdentity);
-    }
-
-    return self::assertContainsHelper(FALSE, $needle, $haystack, $message, $ignoreCase, $checkForObjectIdentity);
+  public static function assertNotContains($needle, $haystack, $message = '', $ignoreCase = FALSE, $checkForObjectIdentity = TRUE, $verbose = TRUE) {
+    if ($verbose) self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    parent::assertNotContains($needle, $haystack, $message, $ignoreCase, $checkForObjectIdentity);
   }
 
 
@@ -364,7 +361,12 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   TRUE on pass, FALSE on fail.
    */
   protected function assertText($text, $message = '') {
-    return $this->assertTextHelper($text, $message, FALSE);
+    if (!$message) {
+      $message = t('"@text" not found', array('@text' => $text));
+    }
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertTextHelper($text, $message, FALSE);
   }
 
   /**
@@ -380,7 +382,12 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   TRUE on pass, FALSE on fail.
    */
   protected function assertNoText($text, $message = '') {
-    return $this->assertTextHelper($text, $message, TRUE);
+    if (!$message) {
+      $message = t('"@text" not found', array('@text' => $text));
+    }
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    
+    $this->assertTextHelper($text, $message, TRUE);
   }
 
   /**
@@ -401,10 +408,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     if ($this->plainTextContent === FALSE) {
       $this->plainTextContent = filter_xss($this->drupalGetContent(), array());
     }
-    if (!$message) {
-      $message = !$not_exists ? t('"@text" found', array('@text' => $text)) : t('"@text" not found', array('@text' => $text));
-    }
-    return $this->assertTrue($not_exists == (strpos($this->plainTextContent, $text) === FALSE), $message);
+    $this->assertTrue($not_exists == (strpos($this->plainTextContent, $text) === FALSE), $message, FALSE);
   }
 
   /**
@@ -422,7 +426,12 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   TRUE on pass, FALSE on fail.
    */
   protected function assertUniqueText($text, $message = '') {
-    return $this->assertUniqueTextHelper($text, $message, TRUE);
+    if (!$message) {
+      $message = '"' . $text . '"' . ' found only once';
+    }
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertUniqueTextHelper($text, $message, TRUE);
   }
 
   /**
@@ -440,7 +449,12 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   TRUE on pass, FALSE on fail.
    */
   protected function assertNoUniqueText($text, $message = '') {
-    return $this->assertUniqueTextHelper($text, $message, FALSE);
+    if (!$message) {
+      $message = '"' . $text . '"' . ' found more than once';
+    }
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    
+    $this->assertUniqueTextHelper($text, $message, FALSE);
   }
 
   /**
@@ -461,16 +475,14 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     if ($this->plainTextContent === FALSE) {
       $this->plainTextContent = filter_xss($this->drupalGetContent(), array());
     }
-    if (!$message) {
-      $message = '"' . $text . '"' . ($be_unique ? ' found only once' : ' found more than once');
-    }
     $first_occurance = strpos($this->plainTextContent, $text);
     if ($first_occurance === FALSE) {
-      return $this->assertTrue(FALSE, $message);
+      $this->assertTrue(FALSE, $message, FALSE);
+      return;   
     }
     $offset = $first_occurance + strlen($text);
     $second_occurance = strpos($this->plainTextContent, $text, $offset);
-    return $this->assertTrue($be_unique == ($second_occurance === FALSE), $message);
+    $this->assertTrue($be_unique == ($second_occurance === FALSE), $message, FALSE);
   }
 
   /**
@@ -487,7 +499,9 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     if (!$message) {
       $message = t('Pattern "@pattern" found', array('@pattern' => $pattern));
     }
-    return $this->assertTrue((bool) preg_match($pattern, $this->drupalGetContent()), $message);
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertTrue((bool) preg_match($pattern, $this->drupalGetContent()), $message, FALSE);
   }
 
   /**
@@ -504,7 +518,9 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     if (!$message) {
       $message = t('Pattern "@pattern" not found', array('@pattern' => $pattern));
     }
-    return $this->assertTrue(!preg_match($pattern, $this->drupalGetContent()), $message);
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertTrue(!preg_match($pattern, $this->drupalGetContent()), $message, FALSE);
   }
 
   /**
@@ -525,7 +541,9 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
         '@expected' => var_export($title, TRUE),
       ));
     }
-    return $this->assertEqual($actual, $title, $message);
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertEquals($actual, $title, $message, FALSE);
   }
 
   /**
@@ -546,7 +564,9 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
         '@unexpected' => var_export($title, TRUE),
       ));
     }
-    return $this->assertNotEqual($actual, $title, $message);
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertNotEqual($actual, $title, $message);
   }
 
   /**
@@ -558,11 +578,12 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   (optional) Value of the field to assert.
    * @param $message
    *   (optional) Message to display.
-   *
+   * @param $verbose
+   *   toggle FALSE when calling from another assertion
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertFieldByXPath($xpath, $value = NULL, $message = '') {
+  protected function assertFieldByXPath($xpath, $value = NULL, $message = '', $verbose = TRUE) {
     $fields = $this->xpath($xpath);
 
     // If value specified then check array for match.
@@ -595,7 +616,10 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
         }
       }
     }
-    return $this->assertTrue($fields && $found, $message);
+
+    if ($verbose) self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertTrue($fields && $found, $message, FALSE);
   }
 
   /**
@@ -629,11 +653,13 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   (optional) Value of the field to assert.
    * @param $message
    *   (optional) Message to display.
+   * @param $verbose
+   *   toggle FALSE when calling from other assertion
    *
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertNoFieldByXPath($xpath, $value = NULL, $message = '') {
+  protected function assertNoFieldByXPath($xpath, $value = NULL, $message = '', $verbose = TRUE) {
     $fields = $this->xpath($xpath);
 
     // If value specified then check array for match.
@@ -648,7 +674,10 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
         }
       }
     }
-    return $this->assertFalse($fields && $found, $message);
+
+    if ($verbose) self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertFalse($fields && $found, $message, FALSE);
   }
 
   /**
@@ -664,7 +693,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   TRUE on pass, FALSE on fail.
    */
   protected function assertFieldByName($name, $value = '', $message = '') {
-    return $this->assertFieldByXPath($this->constructFieldXpath('name', $name), $value, $message ? $message : t('Found field by name @name', array('@name' => $name)), t('Browser'));
+    if (empty($message)) $message = t('Found field by name @name', array('@name' => $name));
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $xpath = $this->constructFieldXpath('name', $name);
+    $this->assertFieldByXPath($xpath, $value, $message, FALSE);
   }
 
   /**
@@ -680,7 +713,10 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   TRUE on pass, FALSE on fail.
    */
   protected function assertNoFieldByName($name, $value = '', $message = '') {
-    return $this->assertNoFieldByXPath($this->constructFieldXpath('name', $name), $value, $message ? $message : t('Did not find field by name @name', array('@name' => $name)), t('Browser'));
+    if (empty($message)) $message = t('Did not find field by name @name', array('@name' => $name));
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertNoFieldByXPath($this->constructFieldXpath('name', $name), $value, $message, FALSE);
   }
 
   /**
@@ -696,7 +732,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   TRUE on pass, FALSE on fail.
    */
   protected function assertFieldById($id, $value = NULL, $message = '') {
-    return $this->assertFieldByXPath($this->constructFieldXpath('id', $id), $value, $message ? $message : t('Found field by id @id', array('@id' => $id)), t('Browser'));
+    if (empty($message)) $message = t('Found field by id @id', array('@id' => $id));
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $xpath = $this->constructFieldXpath('id', $id);
+    $this->assertFieldByXPath($xpath, $value, $message, FALSE);
   }
 
   /**
@@ -712,7 +752,10 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   TRUE on pass, FALSE on fail.
    */
   protected function assertNoFieldById($id, $value = '', $message = '') {
-    return $this->assertNoFieldByXPath($this->constructFieldXpath('id', $id), $value, $message ? $message : t('Did not find field by id @id', array('@id' => $id)), t('Browser'));
+    if (empty($message)) $message = t('Did not find field by id @id', array('@id' => $id));
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertNoFieldByXPath($this->constructFieldXpath('id', $id), $value, $message, FALSE);
   }
 
   /**
@@ -727,7 +770,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    */
   protected function assertFieldChecked($id, $message = '') {
     $elements = $this->xpath('//input[@id=:id]', array(':id' => $id));
-    return $this->assertTrue(isset($elements[0]) && !empty($elements[0]['checked']), $message ? $message : t('Checkbox field @id is checked.', array('@id' => $id)), t('Browser'));
+
+    if (empty($message)) $message = t('Checkbox field @id is checked.', array('@id' => $id));
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertTrue(isset($elements[0]) && !empty($elements[0]['checked']), $message, FALSE);
   }
 
   /**
@@ -742,7 +789,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    */
   protected function assertNoFieldChecked($id, $message = '') {
     $elements = $this->xpath('//input[@id=:id]', array(':id' => $id));
-    return $this->assertTrue(isset($elements[0]) && empty($elements[0]['checked']), $message ? $message : t('Checkbox field @id is not checked.', array('@id' => $id)), t('Browser'));
+
+    if (empty($message)) $message = t('Checkbox field @id is not checked.', array('@id' => $id));
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertTrue(isset($elements[0]) && empty($elements[0]['checked']), $message, FALSE);
   }
 
   /**
@@ -761,7 +812,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    */
   protected function assertOptionSelected($id, $option, $message = '') {
     $elements = $this->xpath('//select[@id=:id]//option[@value=:option]', array(':id' => $id, ':option' => $option));
-    return $this->assertTrue(isset($elements[0]) && !empty($elements[0]['selected']), $message ? $message : t('Option @option for field @id is selected.', array('@option' => $option, '@id' => $id)), t('Browser'));
+    
+    if (empty($message)) $message = t('Option @option for field @id is selected.', array('@option' => $option, '@id' => $id));
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    
+    $this->assertTrue(isset($elements[0]) && !empty($elements[0]['selected']), $message, FALSE);
   }
 
   /**
@@ -778,7 +833,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    */
   protected function assertNoOptionSelected($id, $option, $message = '') {
     $elements = $this->xpath('//select[@id=:id]//option[@value=:option]', array(':id' => $id, ':option' => $option));
-    return $this->assertTrue(isset($elements[0]) && empty($elements[0]['selected']), $message ? $message : t('Option @option for field @id is not selected.', array('@option' => $option, '@id' => $id)), t('Browser'));
+
+    if (empty($message)) $message = t('Option @option for field @id is not selected.', array('@option' => $option, '@id' => $id));
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertTrue(isset($elements[0]) && empty($elements[0]['selected']), $message, FALSE);
   }
 
   /**
@@ -792,7 +851,10 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   TRUE on pass, FALSE on fail.
    */
   protected function assertField($field, $message = '') {
-    return $this->assertFieldByXPath($this->constructFieldXpath('name', $field) . '|' . $this->constructFieldXpath('id', $field), NULL, $message);
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $xpath = $this->constructFieldXpath('name', $field) . '|' . $this->constructFieldXpath('id', $field);
+    $this->assertFieldByXPath($xpath, NULL, $message, FALSE);
   }
 
   /**
@@ -806,7 +868,10 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   TRUE on pass, FALSE on fail.
    */
   protected function assertNoField($field, $message = '') {
-    return $this->assertNoFieldByXPath($this->constructFieldXpath('name', $field) . '|' . $this->constructFieldXpath('id', $field), NULL, $message);
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $xpath = $this->constructFieldXpath('name', $field) . '|' . $this->constructFieldXpath('id', $field);
+    $this->assertNoFieldByXPath($xpath, NULL, $message, FALSE);
   }
 
   /**
@@ -834,7 +899,10 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
       }
       $seen_ids[$id] = TRUE;
     }
-    return $this->assertTrue($status, $message);
+
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertTrue($status, $message, FALSE);
   }
 
   /**
@@ -866,7 +934,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
   protected function assertResponse($code, $message = '') {
     $curl_code = curl_getinfo($this->curlHandle, CURLINFO_HTTP_CODE);
     $match = is_array($code) ? in_array($curl_code, $code) : $curl_code == $code;
-    return $this->assertTrue($match, $message ? $message : t('HTTP response expected !code, actual !curl_code', array('!code' => $code, '!curl_code' => $curl_code)), t('Browser'));
+
+    if (empty($message)) $message = t('HTTP response expected !code, actual !curl_code', array('!code' => $code, '!curl_code' => $curl_code));
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertTrue($match, $message, FALSE);
   }
 
   /**
@@ -881,10 +953,14 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    * @return
    *   Assertion result.
    */
-  protected function assertNoResponse($code, $message = '') {
+  protected function assertNoResponse($code, $message = '') { 
     $curl_code = curl_getinfo($this->curlHandle, CURLINFO_HTTP_CODE);
     $match = is_array($code) ? in_array($curl_code, $code) : $curl_code == $code;
-    return $this->assertFalse($match, $message ? $message : t('HTTP response not expected !code, actual !curl_code', array('!code' => $code, '!curl_code' => $curl_code)), t('Browser'));
+
+    if (empty($message)) $message = t('HTTP response not expected !code, actual !curl_code', array('!code' => $code, '!curl_code' => $curl_code));
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertFalse($match, $message, FALSE);
   }
 
   /**
@@ -905,7 +981,10 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
   protected function assertMail($name, $value = '', $message = '') {
     $captured_emails = variable_get('drupal_test_email_collector', array());
     $email = end($captured_emails);
-    return $this->assertTrue($email && isset($email[$name]) && $email[$name] == $value, $message, t('E-mail'));
+
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertTrue($email && isset($email[$name]) && $email[$name] == $value, $message, FALSE);
   }
 
   /**
@@ -921,7 +1000,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertMailString($field_name, $string, $email_depth) {
+  protected function assertMailString($field_name, $string, $email_depth) { 
     $mails = $this->drupalGetMails();
     $string_found = FALSE;
     for ($i = sizeof($mails) -1; $i >= sizeof($mails) - $email_depth && $i >= 0; $i--) {
@@ -935,7 +1014,11 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
         break;
       }
     }
-    return $this->assertTrue($string_found, t('Expected text found in @field of email message: "@expected".', array('@field' => $field_name, '@expected' => $string)));
+
+    if (empty($message)) $message = t('HTTP response expected !code, actual !curl_code', array('!code' => $code, '!curl_code' => $curl_code));
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertTrue($string_found, $message, FALSE);
   }
 
   /**
@@ -949,11 +1032,15 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertMailPattern($field_name, $regex, $message) {
+  protected function assertMailPattern($field_name, $regex, $message) { 
     $mails = $this->drupalGetMails();
     $mail = end($mails);
     $regex_found = preg_match("/$regex/", $mail[$field_name]);
-    return $this->assertTrue($regex_found, t('Expected text found in @field of email message: "@expected".', array('@field' => $field_name, '@expected' => $regex)));
+    
+    if (empty($message)) t('Expected text found in @field of email message: "@expected".', array('@field' => $field_name, '@expected' => $regex));
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertTrue($regex_found, $message, FALSE);
   }
 
   /**
@@ -969,10 +1056,13 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    * @return
    *   TRUE if the assertion succeeded, FALSE otherwise.
    */
-  protected function assertLink($label, $index = 0, $message = '') {
+  protected function assertLink($label, $index = 0, $message = '') { 
     $links = $this->xpath('//a[normalize-space(text())=:label]', array(':label' => $label));
     $message = ($message ?  $message : t('Link with label %label found.', array('%label' => $label)));
-    return $this->assertTrue(isset($links[$index]), $message);
+    
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    
+    $this->assertTrue(isset($links[$index]), $message, FALSE);
   }
 
   /**
@@ -990,7 +1080,10 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
   protected function assertNoLink($label, $message = '') {
     $links = $this->xpath('//a[normalize-space(text())=:label]', array(':label' => $label));
     $message = ($message ?  $message : t('Link with label %label not found.', array('%label' => $label)));
-    return $this->assertTrue(empty($links), $message);
+
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertTrue(empty($links), $message, FALSE);
   }
 
   /**
@@ -1009,7 +1102,10 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
   protected function assertLinkByHref($href, $index = 0, $message = '') {
     $links = $this->xpath('//a[contains(@href, :href)]', array(':href' => $href));
     $message = ($message ?  $message : t('Link containing href %href found.', array('%href' => $href)));
-    return $this->assertTrue(isset($links[$index]), $message);
+    
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    
+    $this->assertTrue(isset($links[$index]), $message, FALSE);
   }
 
   /**
@@ -1026,8 +1122,18 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
   protected function assertNoLinkByHref($href, $message = '') {
     $links = $this->xpath('//a[contains(@href, :href)]', array(':href' => $href));
     $message = ($message ?  $message : t('No link containing href %href found.', array('%href' => $href)));
-    return $this->assertTrue(empty($links), $message);
+    
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+
+    $this->assertTrue(empty($links), $message, FALSE);
   }
+
+
+  public static function assertEmpty($actual, $message = '') {
+    self::verbose(sprintf("%s %s", __FUNCTION__, $message));
+    parent::assertEmpty($actual, $message);
+  }
+  
 
   /**
    * Generates a random string of ASCII characters of codes 32 to 126.
@@ -1398,7 +1504,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
       '!length' => format_size(strlen($this->drupalGetContent()))
     );
     $message = t('!method @url returned @status (!length).', $message_vars);
-    $this->assertTrue($this->drupalGetContent() !== FALSE, $message, t('Browser'));
+    $this->assertTrue($this->drupalGetContent() !== FALSE, $message);
     return $this->drupalGetContent();
   }
 
@@ -1466,14 +1572,14 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
       $htmlDom = new DOMDocument();
       @$htmlDom->loadHTML($this->drupalGetContent());
       if ($htmlDom) {
-        $this->pass(t('Valid HTML found on "@path"', array('@path' => $this->getUrl())), t('Browser'));
+        $this->pass(t('Valid HTML found on "@path"', array('@path' => $this->getUrl())));
         // It's much easier to work with simplexml than DOM, luckily enough
         // we can just simply import our DOM tree.
         $this->elements = simplexml_import_dom($htmlDom);
       }
     }
     if (!$this->elements) {
-      $this->fail(t('Parsed page successfully.'), t('Browser'));
+      $this->fail(t('Parsed page successfully.'));
     }
 
     return $this->elements;
@@ -1746,7 +1852,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     // if new, verify nid exists in table
     if (isset($node->is_new) && $node->is_new == TRUE) {
       $last_nid = db_result(db_query("SELECT nid from {node} ORDER BY nid DESC LIMIT 1"));
-      $this->assertEqual($last_nid, $node->nid, t("Last nid in node table (@last) matches new node (@new)", array('@last' => $last_nid, '@new' => $node->nid)));
+      $this->assertEquals($last_nid, $node->nid, t("Last nid in node table (@last) matches new node (@new)", array('@last' => $last_nid, '@new' => $node->nid)));
     }
 
     // mark for cleanup on tearDown()
@@ -1763,7 +1869,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
   /**
    * [added] wrapper around variable_set, saves original value for restore on tearDown.
    */
-  function drupalVariableSet($key, $value, $cleanup = TRUE) {
+  protected function drupalVariableSet($key, $value, $cleanup = TRUE) {
     if ($cleanup) {
       $this->cleanup['variables'][$key] = variable_get($key, 0);
     }
@@ -1817,7 +1923,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     menu_rebuild();
     node_add_body_field($type);
 
-    $this->assertEqual($saved_type, SAVED_NEW, t('Created content type %type.', array('%type' => $type->type)));
+    $this->assertEquals($saved_type, SAVED_NEW, t('Created content type %type.', array('%type' => $type->type)));
 
     // Reset permissions so that permissions for this content type are available.
     $this->checkPermissions(array(), TRUE);
@@ -1849,7 +1955,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
       $url_target = $this->getAbsoluteUrl($urls[$index]['href']);
     }
 
-    $this->assertTrue(isset($urls[$index]), t('Clicked link "!label" (!url_target) from !url_before', array('!label' => $label, '!url_target' => $url_target, '!url_before' => $url_before)), t('Browser'));
+    $this->assertTrue(isset($urls[$index]), t('Clicked link "!label" (!url_target) from !url_before', array('!label' => $label, '!url_target' => $url_target, '!url_before' => $url_before)));
 
     if (isset($urls[$index])) {
       return $this->drupalGet($url_target);
