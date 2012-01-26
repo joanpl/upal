@@ -82,5 +82,9 @@ function upal_init() {
   // [bb] login to tests as a user? see RUNAS_USER in phpunit.xml
   $GLOBALS['RUNAS_USER'] = getenv('RUNAS_USER') ? getenv('RUNAS_USER') : NULL;
   // (rest in setUp())
+  
+  // relative path (from drupal root) to upal lib. if not defined, fallback to ./cwd/root
+  // @todo mishmash of globals/constants here, need to clean this up!
+  define('UPAL_LIB_RELATIVE_PATH', getenv('UPAL_LIB_RELATIVE_PATH') ? getenv('UPAL_LIB_RELATIVE_PATH') : (isset($GLOBALS['UPAL_LIB_RELATIVE_PATH']) ? $GLOBALS['UPAL_LIB_RELATIVE_PATH'] : '.') );
 
 }

@@ -2603,8 +2603,9 @@ class DrupalWebTestCase extends DrupalTestCase {
 
     // Use the test mail class instead of the default mail handler class.
     // (variable is set in actual test site, should be set thru curl'd site-under-test, then reverted in tearDown.)
+    // path has to be relative b/c drupal_mail_send loads it relative to root.
     // IMPT: if 'smtp_library' is saved in a feature with strongarm, may need to force set in test site's settings.php.
-    $this->drupalVariableSet('smtp_library', dirname(__FILE__) . '/upal.mail.inc');
+    $this->drupalVariableSet('smtp_library', UPAL_LIB_RELATIVE_PATH . '/upal.mail.inc');
     
     // empty captured mail for each test [also in tearDown]
     // (using direct variable_set here, don't revert)

@@ -24,6 +24,10 @@
     <!-- user to impersonate to run the tests -->
     <!--<var name="RUNAS_USER" value="1" />-->
 
+    <!-- path to upal library, RELATIVE to drupal root. (use ../ etc if out of webroot.) needed for smtp_library -->
+    <var name="UPAL_LIB_RELATIVE_PATH" value="sites/all/libraries/upal" />
+
+    <!-- (not sure what this is for) -->
     <includePath>.</includePath>
   </php>
 </phpunit>
