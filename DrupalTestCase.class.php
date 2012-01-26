@@ -2447,7 +2447,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
   /**
    * tear down after tests: added for cleanup.
    */
-  function tearDown() {
+  protected function tearDown() {
     
     // nodes
     if (is_array($this->cleanup['nodes'])) {
@@ -2603,7 +2603,22 @@ class DrupalWebTestCase extends DrupalTestCase {
 
     // Use the test mail class instead of the default mail handler class.
     // (variable is set in actual test site, should be set thru curl'd site-under-test, then reverted in tearDown.)
+    // IMPT: if 'smtp_library' is saved in a feature with strongarm, may need to force set in test site's settings.php.
     $this->drupalVariableSet('smtp_library', dirname(__FILE__) . '/upal.mail.inc');
+    
+    // empty captured mail for each test [also in tearDown]
+    // (using direct variable_set here, don't revert)
+    variable_set('drupal_test_email_collector', array());
   }
-}
+
+
+  // builds on parent tearDown above
+  protected function tearDown() {
+    parent::tearDown();
+    
+    // empty captured mail for each test [also in tearDown]
+    variable_set('drupal_test_email_collector', array());    
+  }
+
+} //DrupalWebTestCase
 
