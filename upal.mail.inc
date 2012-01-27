@@ -20,14 +20,17 @@
  *   An e-mail message.
  */
 function drupal_mail_wrapper(array $message) {
+  // note: this relies on cache-clear logic in DrupalTestCase::drupalVariableGet, drupalVariableSet to be assert'able in tests.
   $captured_emails = variable_get('drupal_test_email_collector', array());
   $captured_emails[] = $message;
   variable_set('drupal_test_email_collector', $captured_emails);
 
+  /*
   // debug
   watchdog('upal', '@func: added message "@subject" to test email collector. now @count captured emails.',
     array('@func' => __FUNCTION__, '@subject' => $message['subject'], '@count' => count($captured_emails)),
     WATCHDOG_NOTICE);
+  */
 
   return TRUE;
 }

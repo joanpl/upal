@@ -979,7 +979,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   TRUE on pass, FALSE on fail.
    */
   protected function assertMail($name, $value = '', $message = '') {
-    $captured_emails = variable_get('drupal_test_email_collector', array());
+    $captured_emails = self::drupalVariableGet('drupal_test_email_collector', array());
     $email = end($captured_emails);
 
     self::verbose(sprintf("%s %s", __FUNCTION__, $message));
@@ -1875,6 +1875,30 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
     }
     
     variable_set($key, $value);
+
+    // same as logic in pressflow for simpletest.
+    // needed e.g. for upal's drupal_mail_wrapper()
+    // also cleared in drupalVariableGet
+    cache_clear_all('variables', 'cache');
+  }
+
+  /**
+   * [added] wrapper around variable_get, to load a variable set in a curl'd page.
+   * ensures variable is loaded completely fresh
+   * (e.g. necessary for drupal_test_email_collector)
+   */
+  protected function drupalVariableGet($key, $default = NULL) {
+    global $conf;
+
+    // surgically reset this var. (might be a problem if it's overridden in code. use variable_get in that case.)
+    unset($conf[$key]);
+
+    cache_clear_all('variables', 'cache');
+
+    // will reload unset var but preserve overrides from code (e.g. settings.php)
+    $conf = variable_init($conf, TRUE);
+
+    return variable_get($key, $default);
   }
   
 
@@ -2110,7 +2134,7 @@ abstract class DrupalTestCase extends PHPUnit_Framework_TestCase {
    *   An array containing e-mail messages captured during the current test.
    */
   protected function drupalGetMails($filter = array()) {
-    $captured_emails = variable_get('drupal_test_email_collector', array());
+    $captured_emails = self::drupalVariableGet('drupal_test_email_collector', array());
     $filtered_emails = array();
 
     foreach ($captured_emails as $message) {
@@ -2723,7 +2747,7 @@ class DrupalWebTestCase extends DrupalTestCase {
   protected function tearDown() {
     parent::tearDown();
     
-    // empty captured mail for each test [also in tearDown]
+    // empty captured mail for each test [also in setUp]
     variable_set('drupal_test_email_collector', array());    
   }
 
