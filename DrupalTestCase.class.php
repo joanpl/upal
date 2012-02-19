@@ -2761,24 +2761,27 @@ class DrupalWebTestCase extends DrupalTestCase {
   }
 
 
-  // account for new node created in a test. invoke after creating, will cleanup on tearDown. only 1 at a time.
+  // find a new user or node created in a test. 
+  // also cleans up on tearDown unless $cleanup==FALSE. only 1 at a time.
   // different from drupalCreateNode/drupalCreateUser -- this is for entities created w/ drupalPost, etc
-  protected function cleanupNewNode() {
+  protected function findNewNode($cleanup = TRUE) {
     if (!empty($this->maxNidAtStart)) {
-      $new_nid = (int)db_result(db_query("SELECT nid from {node} WHERE nid > %d ORDER BY nid DESC LIMIT 1", $this->maxNidAtStart));
-      if ($new_nid) {
-        $this->verbose("Noticed new node to cleanup, nid $new_nid");
+      $new_nid = db_result(db_query("SELECT nid from {node} WHERE nid > %d ORDER BY nid DESC LIMIT 1", $this->maxNidAtStart));
+      if ($new_nid && $cleanup) {
+        $this->verbose(t("Noticed new node to cleanup, nid @nid", array('@nid' => $new_nid)));
         $this->cleanup['nodes'][] = $new_nid;
       }
+      return $new_nid;
     }    
   }
-  protected function cleanupNewUser() {
+  protected function findNewUser($cleanup = TRUE) {
     if (!empty($this->maxUidAtStart)) {
-      $new_uid = (int)db_result(db_query("SELECT uid from {users} WHERE uid > %d ORDER BY uid DESC LIMIT 1", $this->maxUidAtStart));
-      if ($new_uid) {
-        $this->verbose("Noticed new user to cleanup, uid $new_uid");
+      $new_uid = db_result(db_query("SELECT uid from {users} WHERE uid > %d ORDER BY uid DESC LIMIT 1", $this->maxUidAtStart));
+      if ($new_uid && $cleanup) {
+        $this->verbose(t("Noticed new user to cleanup, uid @uid", array('@uid' => $new_uid)));
         $this->cleanup['users'][] = $new_uid;
       }
+      return $new_uid;
     }
   }
   
