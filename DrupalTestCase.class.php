@@ -2640,6 +2640,10 @@ class DrupalUnitTestCase extends DrupalTestCase {
   - no longer starts with empty environment. instead runs on its own ready-to-test site, handle test data separately.
 */
 class DrupalWebTestCase extends DrupalTestCase {
+
+  protected $maxUidAtStart = NULL, 
+            $maxNidAtStart = NULL;
+
   public function setUp() {
     $this->verbose("Setting up " . get_class($this));
 
@@ -2740,6 +2744,11 @@ class DrupalWebTestCase extends DrupalTestCase {
     // empty captured mail for each test [also in tearDown]
     // (using direct variable_set here, don't revert)
     variable_set('drupal_test_email_collector', array());
+    
+    
+    // remember max IDs at start, to catch new items
+    $this->maxUidAtStart = db_result(db_query("SELECT MAX(uid) from {users}"));
+    $this->maxNidAtStart = db_result(db_query("SELECT MAX(nid) from {node}"));
   }
 
 
@@ -2750,6 +2759,29 @@ class DrupalWebTestCase extends DrupalTestCase {
     // empty captured mail for each test [also in setUp]
     variable_set('drupal_test_email_collector', array());    
   }
+
+
+  // account for new node created in a test. invoke after creating, will cleanup on tearDown. only 1 at a time.
+  // different from drupalCreateNode/drupalCreateUser -- this is for entities created w/ drupalPost, etc
+  protected function cleanupNewNode() {
+    if (!empty($this->maxNidAtStart)) {
+      $new_nid = (int)db_result(db_query("SELECT nid from {node} WHERE nid > %d ORDER BY nid DESC LIMIT 1", $this->maxNidAtStart));
+      if ($new_nid) {
+        $this->verbose("Noticed new node to cleanup, nid $new_nid");
+        $this->cleanup['nodes'][] = $new_nid;
+      }
+    }    
+  }
+  protected function cleanupNewUser() {
+    if (!empty($this->maxUidAtStart)) {
+      $new_uid = (int)db_result(db_query("SELECT uid from {users} WHERE uid > %d ORDER BY uid DESC LIMIT 1", $this->maxUidAtStart));
+      if ($new_uid) {
+        $this->verbose("Noticed new user to cleanup, uid $new_uid");
+        $this->cleanup['users'][] = $new_uid;
+      }
+    }
+  }
+  
 
 } //DrupalWebTestCase
 
